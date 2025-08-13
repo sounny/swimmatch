@@ -6,6 +6,7 @@
   - Basic heuristics compute BMI, ape index, and suggest strokes/distances.
   - Included presets for Phelps, Dressel, Finke, Ledecky and McIntosh.
 - 2025-08-13: Introduced reusable swimmer shape for more realistic silhouette and mini-stroke panels.
+- 2025-08-13: Added simple coach tests panel with SWOLF and CSS calculations stored in localStorage.
 
 ## Instructions for future agents
 - Keep the project framework-free (vanilla JS, CSS, HTML).

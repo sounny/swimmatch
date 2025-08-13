@@ -66,6 +66,38 @@ const presets = {
   },
 };
 
+function dps(distanceMeters, strokes) {
+  return strokes > 0 ? distanceMeters / strokes : 0;
+}
+
+function strokeRate(strokes, timeSeconds) {
+  return timeSeconds > 0 ? (strokes / timeSeconds) * 60 : 0;
+}
+
+function swolf(timeSeconds, strokes) {
+  return (timeSeconds || 0) + (strokes || 0);
+}
+
+function cssPace100(t200Seconds, t400Seconds) {
+  if (!t200Seconds || !t400Seconds || t400Seconds <= t200Seconds) return 0;
+  return (t400Seconds - t200Seconds) / 2;
+}
+
+function zonesFromCSS(css100) {
+  return {
+    easy: css100 + 8,
+    steady: css100 + 4,
+    css: css100,
+    speed: css100 - 4,
+    sprint: css100 - 8,
+  };
+}
+
+function worldAquaticsPoints(timeSeconds, baseTimeSeconds) {
+  if (!timeSeconds || !baseTimeSeconds) return 0;
+  return Math.floor(1000 * (baseTimeSeconds / timeSeconds) ** 3);
+}
+
 function computeMetrics(data) {
   const h = data.height;
   const w = data.weight;
@@ -116,5 +148,14 @@ function computeMetrics(data) {
 }
 
 if (typeof module !== "undefined") {
-  module.exports = { computeMetrics, presets };
+  module.exports = {
+    computeMetrics,
+    presets,
+    dps,
+    strokeRate,
+    swolf,
+    cssPace100,
+    zonesFromCSS,
+    worldAquaticsPoints,
+  };
 }

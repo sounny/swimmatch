@@ -91,6 +91,45 @@
     });
   }
 
+  const tests = JSON.parse(localStorage.getItem("tests") || "[]");
+
+  function save25() {
+    const time = parseFloat(document.getElementById("t25").value);
+    const strokes = parseFloat(document.getElementById("s25").value);
+    if (!time || !strokes) return;
+    const sw = swolf(time, strokes);
+    const d = dps(25, strokes);
+    const sr = strokeRate(strokes, time);
+    tests.push({
+      date: Date.now(),
+      time,
+      strokes,
+      swolf: sw,
+      dps: d,
+      sr,
+    });
+    localStorage.setItem("tests", JSON.stringify(tests));
+    document.getElementById("out25").textContent = `SWOLF ${sw.toFixed(
+      1,
+    )} | DPS ${d.toFixed(2)} m/st | SR ${sr.toFixed(1)} spm`;
+  }
+
+  function calcCSS() {
+    const t200 = parseFloat(document.getElementById("t200").value);
+    const t400 = parseFloat(document.getElementById("t400").value);
+    if (!t200 || !t400 || t400 <= t200) return;
+    const css = cssPace100(t200, t400);
+    const zones = zonesFromCSS(css);
+    document.getElementById("outCSS").textContent = `CSS ${css.toFixed(
+      2,
+    )} s/100 | Easy ${zones.easy.toFixed(1)} - Sprint ${zones.sprint.toFixed(
+      1,
+    )}`;
+  }
+
+  document.getElementById("save25").addEventListener("click", save25);
+  document.getElementById("calcCSS").addEventListener("click", calcCSS);
+
   // initialize with first preset
   presetSelect.value = "Michael Phelps";
   const init = presets[presetSelect.value];
