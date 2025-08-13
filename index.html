@@ -48,7 +48,10 @@
       }
       svg#silhouette path,
       svg#silhouette rect,
-      svg#silhouette circle {
+      svg#silhouette circle,
+      .miniStroke svg path,
+      .miniStroke svg rect,
+      .miniStroke svg circle {
         fill: #d4d4d8;
         stroke: #4b5563;
         stroke-width: 2;
@@ -91,6 +94,23 @@
     </style>
   </head>
   <body>
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      style="position: absolute; width: 0; height: 0"
+    >
+      <defs>
+        <g id="swimmerShape">
+          <circle cx="100" cy="20" r="10"></circle>
+          <path
+            d="M95 30 L105 30 C110 50 110 70 105 90 L95 90 C90 70 90 50 95 30Z"
+          ></path>
+          <path d="M95 40 L15 50 L15 60 L95 50Z"></path>
+          <path d="M105 40 L185 50 L185 60 L105 50Z"></path>
+          <path d="M95 90 L90 160 L96 160 L100 90Z"></path>
+          <path d="M105 90 L110 160 L104 160 L100 90Z"></path>
+        </g>
+      </defs>
+    </svg>
     <h1>SwimMatch Prototype</h1>
     <div class="dashboard">
       <div class="panel">
@@ -136,49 +156,7 @@
       </div>
       <div class="panel" id="silhouette-container">
         <svg id="silhouette" viewBox="0 0 200 200">
-          <g id="person">
-            <circle cx="100" cy="20" r="10"></circle>
-            <rect
-              x="90"
-              y="30"
-              width="20"
-              height="60"
-              rx="8"
-              id="torsoShape"
-            ></rect>
-            <rect
-              x="0"
-              y="40"
-              width="90"
-              height="10"
-              rx="5"
-              id="armLeft"
-            ></rect>
-            <rect
-              x="110"
-              y="40"
-              width="90"
-              height="10"
-              rx="5"
-              id="armRight"
-            ></rect>
-            <rect
-              x="90"
-              y="90"
-              width="10"
-              height="70"
-              rx="5"
-              id="legLeft"
-            ></rect>
-            <rect
-              x="100"
-              y="90"
-              width="10"
-              height="70"
-              rx="5"
-              id="legRight"
-            ></rect>
-          </g>
+          <g id="person"><use href="#swimmerShape"></use></g>
         </svg>
       </div>
       <div class="panel stats">
@@ -207,7 +185,7 @@
                   repeatCount="indefinite"
                 />
               </rect>
-              <g class="miniPerson"></g>
+              <g class="miniPerson"><use href="#swimmerShape"></use></g>
             </svg>
           </div>
           <div class="miniStroke" data-label="Backstroke">
@@ -221,7 +199,7 @@
                   repeatCount="indefinite"
                 />
               </rect>
-              <g class="miniPerson"></g>
+              <g class="miniPerson"><use href="#swimmerShape"></use></g>
             </svg>
           </div>
           <div class="miniStroke" data-label="Breaststroke">
@@ -235,7 +213,7 @@
                   repeatCount="indefinite"
                 />
               </rect>
-              <g class="miniPerson"></g>
+              <g class="miniPerson"><use href="#swimmerShape"></use></g>
             </svg>
           </div>
           <div class="miniStroke" data-label="Butterfly">
@@ -249,7 +227,7 @@
                   repeatCount="indefinite"
                 />
               </rect>
-              <g class="miniPerson"></g>
+              <g class="miniPerson"><use href="#swimmerShape"></use></g>
             </svg>
           </div>
         </div>

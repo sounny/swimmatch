@@ -83,9 +83,10 @@
     document.querySelectorAll(".miniPerson").forEach((p) => {
       const hScale = (data.height || 180) / 180;
       const wScale = (data.wingspan || data.height || 180) / 200;
+      const base = 0.3;
       p.setAttribute(
         "transform",
-        `translate(50,0) scale(${wScale},${hScale}) translate(-100,0)`,
+        `translate(50,5) scale(${base * wScale},${base * hScale}) translate(-100,0)`,
       );
     });
   }

@@ -5,6 +5,7 @@
   - Added SVG silhouette that scales with height and wingspan.
   - Basic heuristics compute BMI, ape index, and suggest strokes/distances.
   - Included presets for Phelps, Dressel, Finke, Ledecky and McIntosh.
+- 2025-08-13: Introduced reusable swimmer shape for more realistic silhouette and mini-stroke panels.
 
 ## Instructions for future agents
 - Keep the project framework-free (vanilla JS, CSS, HTML).
