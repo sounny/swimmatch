@@ -1,1 +1,699 @@
+import React, { useMemo, useState, useEffect } from "react";
+
+/**
+ * SwimMatch — Anthropometrics→Stroke/Distance Dashboard
+ * -----------------------------------------------------
+ * A single-file React app that:
+ *  - Captures swimmer body dimensions + optional performance traits
+ *  - Morphs a live SVG silhouette (arms-out) as dimensions change
+ *  - Computes BMI, ape index, key ratios, simple drag/propulsion proxies
+ *  - Estimates stroke & distance affinity with transparent heuristics
+ *  - Shows monochrome, minimalist dashboard panels with animated water-flow
+ *  - Offers famous swimmer presets (Phelps, Dressel, Finke, Ledecky, McIntosh)
+ *
+ * Notes
+ * -----
+ * - This is a client-only prototype designed for coaching exploration.
+ * - CDC/WHO percentile values here are *coarse estimates* derived from public charts;
+ *   they are included for educational purposes only. For competition decisions,
+ *   consult official growth references and a qualified clinician.
+ * - Heuristics are deliberately explainable (see scoringWeights below).
+ * - Units: defaults to Metric; toggle supported. All scoring runs in metric.
+ * - Famous-athlete data is based on reputable public sources (see dataset).
+ *   Some fields are unknown publicly and remain null.
+ *
+ * UI
+ * --
+ * - Minimalist monochrome palette via Tailwind classes.
+ * - No external UI libs required; pure React + Tailwind.
+ */
+
+// ------------------------------- Utility -----------------------------------
+const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+const round = (v, d=1) => Math.round(v * Math.pow(10,d)) / Math.pow(10,d);
+const cmToIn = cm => cm / 2.54;
+const inToCm = inch => inch * 2.54;
+const kgToLb = kg => kg * 2.2046226218;
+const lbToKg = lb => lb / 2.2046226218;
+const ftInToCm = (ft, inch) => inToCm(ft*12 + inch);
+const cmToFtIn = (cm) => {
+  const totalIn = cmToIn(cm);
+  const ft = Math.floor(totalIn/12);
+  const inch = Math.round(totalIn - ft*12);
+  return { ft, inch };
+};
+
+// Convert US shoe size (men) → approximate foot length (cm). Very rough.
+// Based on common sizing charts: size 10 ≈ 28 cm; slope ~ 0.667 cm/US size.
+const usShoeToFootCm = (sizeUS) => 23 + (sizeUS - 5) * 0.667; // size 5 ≈ 23 cm
+const footCmToUsShoe = (cm) => 5 + (cm - 23) / 0.667;
+
+// -------------------------- Percentile Approximator -------------------------
+/**
+ * This lightweight approximator provides *estimated* height & BMI percentiles
+ * for ages 5–20 using coarse mean/SD anchors for boys & girls blended from
+ * CDC charts. It is NOT a replacement for proper LMS-based Z-scores.
+ */
+const growthAnchors = {
+  M: {
+    // age: { hMean cm, hSD, bmiMean, bmiSD }
+    6:  { h: [116.0, 5.7], bmi: [16.3, 1.4] },
+    8:  { h: [128.2, 6.0], bmi: [16.9, 1.8] },
+    10: { h: [138.4, 6.7], bmi: [17.5, 2.2] },
+    12: { h: [149.0, 8.1], bmi: [18.5, 2.6] },
+    14: { h: [164.0, 8.0], bmi: [20.3, 2.6] },
+    16: { h: [173.4, 7.2], bmi: [22.0, 2.7] },
+    18: { h: [176.8, 7.0], bmi: [23.1, 2.8] },
+  },
+  F: {
+    6:  { h: [115.4, 5.6], bmi: [16.2, 1.4] },
+    8:  { h: [127.0, 6.3], bmi: [16.8, 1.8] },
+    10: { h: [138.0, 7.2], bmi: [17.6, 2.2] },
+    12: { h: [151.0, 7.1], bmi: [18.8, 2.6] },
+    14: { h: [159.0, 6.4], bmi: [21.1, 2.6] },
+    16: { h: [161.2, 6.1], bmi: [22.2, 2.7] },
+    18: { h: [162.2, 6.1], bmi: [22.7, 2.8] },
+  },
+};
+
+const interpAnchor = (sex, age) => {
+  const tbl = growthAnchors[sex];
+  const keys = Object.keys(tbl).map(k=>+k).sort((a,b)=>a-b);
+  if (age <= keys[0]) return tbl[keys[0]];
+  if (age >= keys[keys.length-1]) return tbl[keys[keys.length-1]];
+  for (let i=0;i<keys.length-1;i++){
+    const a = keys[i], b = keys[i+1];
+    if (age >= a && age <= b){
+      const t = (age - a) / (b - a);
+      const hMean = tbl[a].h[0]*(1-t) + tbl[b].h[0]*t;
+      const hSD   = tbl[a].h[1]*(1-t) + tbl[b].h[1]*t;
+      const bmiM  = tbl[a].bmi[0]*(1-t)+ tbl[b].bmi[0]*t;
+      const bmiSD = tbl[a].bmi[1]*(1-t)+ tbl[b].bmi[1]*t;
+      return { h:[hMean,hSD], bmi:[bmiM,bmiSD] };
+    }
+  }
+};
+
+const zToPct = (z) => {
+  // standard normal CDF approximation (Hart, 1968)
+  const t = 1 / (1 + 0.2316419 * Math.abs(z));
+  const d = 0.3989423 * Math.exp(-z*z/2);
+  let prob = d * t * (0.3193815 + t*(-0.3565638 + t*(1.781478 + t*(-1.821256 + t*1.330274))));
+  if (z > 0) prob = 1 - prob;
+  return 100 * prob;
+};
+
+const approxPercentiles = (sex, age, heightCm, bmi) => {
+  const a = interpAnchor(sex, age);
+  if (!a) return { heightPct: null, bmiPct: null };
+  const [hm, hsd] = a.h, [bm, bsd] = a.bmi;
+  const zH = (heightCm - hm) / hsd;
+  const zB = (bmi - bm) / bsd;
+  return { heightPct: clamp(zToPct(zH), 0.1, 99.9), bmiPct: clamp(zToPct(zB), 0.1, 99.9) };
+};
+
+// ----------------------------- Famous Athletes ------------------------------
+/**
+ * Publicly reported basic anthropometrics (heights/weights from Wikipedia/TeamUSA; 
+ * wingspan + shoe sizes from mainstream outlets as cited below). Many other fields
+ * are not publicly available and remain null.
+ *
+ * Sources (examples):
+ *  - Phelps height/weight (Wikipedia) & wingspan 6'7"; shoe size ~ US 14
+ *  - Dressel height/weight (Wikipedia); wingspan ~ 6'4"; shoe size ~ US 11
+ *  - Finke height/weight (Wikipedia/TeamUSA)
+ *  - Ledecky height (TeamUSA/Wikipedia); shoe & wingspan not reliably public
+ *  - Summer McIntosh height (Wikipedia)
+ */
+const famous = {
+  "Michael Phelps (M)": {
+    sex: "M",
+    age: 23,
+    heightCm: 193,
+    weightKg: 88,
+    wingspanCm: 201, // ~6'7"
+    shoeUS: 14,      // commonly reported
+    sources: [
+      "Wikipedia — Michael Phelps",
+      "Biography/Scientific American — wingspan/feet",
+    ],
+  },
+  "Caeleb Dressel (M)": {
+    sex: "M",
+    age: 24,
+    heightCm: 191,
+    weightKg: 91,
+    wingspanCm: 193, // commonly reported
+    shoeUS: 11,
+    sources: [
+      "Wikipedia — Caeleb Dressel",
+      "Sportskeeda — wingspan/shoe (reporting)",
+    ],
+  },
+  "Bobby Finke (M)": {
+    sex: "M",
+    age: 22,
+    heightCm: 185,
+    weightKg: 78,
+    wingspanCm: null,
+    shoeUS: null,
+    sources: ["Wikipedia/TeamUSA — Bobby Finke"],
+  },
+  "Katie Ledecky (F)": {
+    sex: "F",
+    age: 20,
+    heightCm: 183,
+    weightKg: 72,
+    wingspanCm: null, // not reliably public
+    shoeUS: null,
+    sources: ["TeamUSA/Wikipedia — Katie Ledecky"],
+  },
+  "Summer McIntosh (F)": {
+    sex: "F",
+    age: 18,
+    heightCm: 178,
+    weightKg: 62,
+    wingspanCm: null,
+    shoeUS: null,
+    sources: ["Wikipedia — Summer McIntosh"],
+  },
+};
+
+// ------------------------------ Scoring Model -------------------------------
+/**
+ * Heuristic scoring with transparent weights. Each score returns [0..100].
+ *
+ * Derived metrics:
+ *  - apeIndex = wingspan - height (cm)
+ *  - torsoLeg = torsoCm / legCm (higher→longer torso)
+ *  - shoulderWaist = shoulderCm / waistCm
+ *  - handScale = handCm / 20 (adult~20cm), footScale = footCm / 27 (adult~27cm)
+ *  - bmi = kg / m^2
+ *  - dragProxy ∝ bmi + (waistCm/heightCm)*k - shoulderWaist*k2
+ *  - propProxy ∝ shoulder + ape + hands + feet + shoulderER
+ */
+const scoringWeights = {
+  drag: { bmi: 0.6, waistH: 0.3, shapeBonus: 0.2 },
+  prop: { shoulder: 0.25, ape: 0.25, hands: 0.2, feet: 0.2, shoulderER: 0.1 },
+  strokes: {
+    fly:   { prop: 0.45, drag: 0.15, torsoLeg: 0.25, ankle: 0.15 },
+    back:  { prop: 0.4,  drag: 0.25, torsoLeg: 0.2,  ankle: 0.15 },
+    free:  { prop: 0.45, drag: 0.25, torsoLeg: 0.15, ankle: 0.15 },
+    breast:{ prop: 0.3,  drag: 0.2,  torsoLeg: 0.1,  ankle: 0.4 },
+    IM:    { prop: 0.35, drag: 0.2,  torsoLeg: 0.2,  ankle: 0.25 },
+  },
+  distances: {
+    sprint:   { prop: 0.55, drag: 0.25, bmiLean: 0.2 },    // 50/100
+    middle:   { prop: 0.45, drag: 0.35, bmiLean: 0.2 },     // 200/400
+    distance: { prop: 0.35, drag: 0.45, bmiLean: 0.2 },     // 800/1500
+  }
+};
+
+function normalize01(v, min, max){
+  if (v==null || isNaN(v)) return 0.5;
+  return clamp((v - min) / (max - min), 0, 1);
+}
+
+function computeMetrics(inp){
+  const h = inp.heightCm;
+  const w = inp.weightKg;
+  const bmi = w / ((h/100)**2);
+  const ape = (inp.wingspanCm ?? h) - h; // if unknown, assume 0
+  const torsoLeg = (inp.torsoCm && inp.legCm) ? inp.torsoCm / inp.legCm : 0.75;
+  const shoulderWaist = (inp.shoulderCm && inp.waistCm) ? inp.shoulderCm / inp.waistCm : 0.9;
+  const handScale = inp.handCm ? (inp.handCm / 20) : 1.0;
+  const footScale = inp.footCm ? (inp.footCm / 27) : 1.0;
+
+  // Normalize components into [0..1]
+  const nApe = normalize01(ape, -10, 15);               // -10cm..+15cm
+  const nShoulder = normalize01(inp.shoulderCm || 40, 30, 55);
+  const nWaistH = normalize01((inp.waistCm||60)/h*100, 28, 40); // waist/height (%)
+  const nTorso = normalize01(torsoLeg, 0.65, 0.9);      // longer torso → higher
+  const nHands = clamp(handScale, 0.7, 1.4) - 0.7;      // map ~0..0.7
+  const nFeet  = clamp(footScale, 0.7, 1.4) - 0.7;
+  const nShoulderER = inp.shoulderER;                   // [0..1]
+  const nAnkle = inp.ankleFlex;                          // [0..1]
+  const nBmiLean = 1 - normalize01(bmi, 17, 25);        // leaner → higher
+
+  // Proxies
+  const propProxy =
+    scoringWeights.prop.shoulder * nShoulder +
+    scoringWeights.prop.ape * nApe +
+    scoringWeights.prop.hands * nHands +
+    scoringWeights.prop.feet * nFeet +
+    scoringWeights.prop.shoulderER * nShoulderER; // 0..1-ish
+
+  const dragProxy =
+    scoringWeights.drag.bmi * normalize01(bmi, 16, 28) +
+    scoringWeights.drag.waistH * nWaistH -
+    scoringWeights.drag.shapeBonus * normalize01(shoulderWaist, 0.7, 1.1);
+
+  // Stroke scores (higher is better)
+  function scoreStroke(w){
+    const raw =
+      w.prop   * propProxy +
+      w.drag   * (1 - dragProxy) +
+      w.torsoLeg * nTorso +
+      w.ankle  * nAnkle;
+    return Math.round(100 * clamp(raw, 0, 1));
+  }
+
+  const stroke = {
+    Fly:  scoreStroke(scoringWeights.strokes.fly),
+    Back: scoreStroke(scoringWeights.strokes.back),
+    Free: scoreStroke(scoringWeights.strokes.free),
+    Breast: scoreStroke(scoringWeights.strokes.breast),
+    IM:   scoreStroke(scoringWeights.strokes.IM),
+  };
+
+  // Distance bands
+  function scoreBand(w){
+    const raw = w.prop*propProxy + w.drag*(1-dragProxy) + w.bmiLean*nBmiLean;
+    return Math.round(100 * clamp(raw, 0, 1));
+  }
+  const dist = {
+    Sprint50_100: scoreBand(scoringWeights.distances.sprint),
+    Middle200_400: scoreBand(scoringWeights.distances.middle),
+    Distance800_1500: scoreBand(scoringWeights.distances.distance),
+  };
+
+  // Percentiles (approx)
+  const pct = approxPercentiles(inp.sex, inp.age, h, bmi);
+
+  return {
+    bmi, ape, torsoLeg, shoulderWaist, handScale, footScale, propProxy, dragProxy,
+    stroke, dist, percentiles: pct,
+  };
+}
+
+// --------------------------- Silhouette Rendering ---------------------------
+function Silhouette({ heightCm, wingspanCm, shoulderCm, waistCm }){
+  // Base proportions
+  const h = heightCm || 160;
+  const span = wingspanCm || h;
+  const shoulder = shoulderCm || 40;
+  const waist = waistCm || 60;
+
+  // Normalize to SVG viewBox
+  const VBW = 320, VBH = 560; // vertical poster layout
+  const scale =  VBH / h;     // px per cm
+
+  const armY =  VBH * 0.28;
+  const neckY = VBH * 0.18;
+  const hipY  = VBH * 0.45;
+
+  const halfSpan = (span*scale) / 2;
+  const centerX = VBW/2;
+
+  // Stylized water-flow lines (animated)
+  const flows = [
+    `M 10 ${VBH*0.7} C ${VBW*0.3} ${VBH*0.6}, ${VBW*0.7} ${VBH*0.8}, ${VBW-10} ${VBH*0.65}`,
+    `M 10 ${VBH*0.8} C ${VBW*0.2} ${VBH*0.75}, ${VBW*0.8} ${VBH*0.75}, ${VBW-10} ${VBH*0.78}`,
+    `M 10 ${VBH*0.6} C ${VBW*0.4} ${VBH*0.5}, ${VBW*0.6} ${VBH*0.7}, ${VBW-10} ${VBH*0.62}`,
+  ];
+
+  return (
+    <svg viewBox={`0 0 ${VBW} ${VBH}`} className="w-full h-full">
+      <defs>
+        <linearGradient id="g1" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#111" stopOpacity="0.0"/>
+          <stop offset="50%" stopColor="#111" stopOpacity="0.25"/>
+          <stop offset="100%" stopColor="#111" stopOpacity="0.0"/>
+        </linearGradient>
+        <style>{`
+          .flow { stroke-dasharray: 12 10; animation: flow 4s linear infinite; }
+          @keyframes flow { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -44; } }
+        `}</style>
+      </defs>
+
+      {/* Water flow */}
+      {flows.map((d,i)=> (
+        <path key={i} d={d} fill="none" stroke="url(#g1)" strokeWidth={2} className="flow"/>
+      ))}
+
+      {/* Arms */}
+      <line x1={centerX-halfSpan} y1={armY} x2={centerX+halfSpan} y2={armY} stroke="#111" strokeWidth={8} strokeLinecap="round"/>
+
+      {/* Head */}
+      <circle cx={centerX} cy={neckY-26} r={22} fill="#222" />
+
+      {/* Torso */}
+      <rect x={centerX - (shoulder*scale)/2} y={neckY} width={shoulder*scale} height={hipY-neckY} rx={shoulder*scale*0.1} fill="#1f2937"/>
+
+      {/* Waist marker */}
+      <rect x={centerX - (waist*scale)/2} y={hipY-6} width={waist*scale} height={12} rx={6} fill="#0f172a" opacity={0.8}/>
+
+      {/* Legs (stylized) */}
+      <rect x={centerX-18} y={hipY} width={14} height={VBH-hipY-10} rx={8} fill="#1f2937"/>
+      <rect x={centerX+4} y={hipY} width={14} height={VBH-hipY-10} rx={8} fill="#1f2937"/>
+    </svg>
+  );
+}
+
+function StrokeMini({ label, factor=1 }){
+  // Re-use silhouette but skew/offset to suggest motion for each stroke
+  return (
+    <div className="relative aspect-[4/3] w-full bg-gradient-to-b from-white to-zinc-100 rounded-2xl overflow-hidden">
+      <div className="absolute inset-0 opacity-80">
+        <Silhouette heightCm={160} wingspanCm={165} shoulderCm={42} waistCm={62}/>
+      </div>
+      <div className="absolute bottom-2 left-2 text-xs tracking-wide uppercase text-zinc-500">{label}</div>
+    </div>
+  );
+}
+
+// ------------------------------- Mini Charts --------------------------------
+function BarRow({ name, value }){
+  return (
+    <div className="flex items-center gap-3">
+      <div className="w-24 text-xs text-zinc-500">{name}</div>
+      <div className="flex-1 h-3 bg-zinc-200 rounded-full overflow-hidden">
+        <div className="h-full bg-zinc-800" style={{ width: `${clamp(value,0,100)}%` }} />
+      </div>
+      <div className="w-10 text-right text-xs text-zinc-600">{value}</div>
+    </div>
+  );
+}
+
+// ------------------------------- Input UI -----------------------------------
+function Stepper({ label, value, setValue, step=1, suffix="", min=0, max=999, className="" }){
+  return (
+    <div className={`flex items-center justify-between gap-2 ${className}`}>
+      <div className="text-xs text-zinc-500 w-28">{label}</div>
+      <div className="flex items-center gap-1">
+        <button className="px-2 py-1 rounded-md bg-zinc-200 hover:bg-zinc-300 text-zinc-700" onClick={()=> setValue(v=> clamp(round(v-step,2), min, max))}>−</button>
+        <input className="w-24 text-right px-2 py-1 rounded-md bg-white border border-zinc-200" value={value} onChange={e=>{
+          const v = parseFloat(e.target.value); if(!isNaN(v)) setValue(clamp(v,min,max));
+        }} />
+        <span className="text-xs text-zinc-500 w-8">{suffix}</span>
+        <button className="px-2 py-1 rounded-md bg-zinc-200 hover:bg-zinc-300 text-zinc-700" onClick={()=> setValue(v=> clamp(round(v+step,2), min, max))}>+</button>
+      </div>
+    </div>
+  );
+}
+
+function Toggle({ label, value, onChange, left="M", right="F" }){
+  return (
+    <div className="flex items-center justify-between">
+      <div className="text-xs text-zinc-500 w-28">{label}</div>
+      <div className="flex items-center bg-zinc-200 rounded-md overflow-hidden">
+        <button className={`px-3 py-1 text-sm ${value==='M'? 'bg-zinc-800 text-white':'text-zinc-700'}`} onClick={()=>onChange('M')}>{left}</button>
+        <button className={`px-3 py-1 text-sm ${value==='F'? 'bg-zinc-800 text-white':'text-zinc-700'}`} onClick={()=>onChange('F')}>{right}</button>
+      </div>
+    </div>
+  );
+}
+
+function Slider({ label, value, setValue }){
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between">
+        <div className="text-xs text-zinc-500 w-28">{label}</div>
+        <div className="text-xs text-zinc-600">{Math.round(value*100)}%</div>
+      </div>
+      <input type="range" min={0} max={1} step={0.01} value={value} onChange={e=> setValue(parseFloat(e.target.value))} className="w-full" />
+    </div>
+  );
+}
+
+// ------------------------------ Main Component ------------------------------
+export default function SwimMatchDashboard(){
+  // Unit system
+  const [metric, setMetric] = useState(true);
+
+  // Inputs (initialize with a typical 12 y/o male like Nori)
+  const [sex, setSex] = useState('M');
+  const [age, setAge] = useState(12);
+  const [heightCm, setHeightCm] = useState(164); // 5'4"
+  const [weightKg, setWeightKg] = useState(48);
+  const [wingspanCm, setWingspanCm] = useState(165);
+  const [torsoCm, setTorsoCm] = useState(62);
+  const [legCm, setLegCm] = useState(84);
+  const [shoulderCm, setShoulderCm] = useState(40);
+  const [waistCm, setWaistCm] = useState(66);
+  const [footCm, setFootCm] = useState(27); // ≈ US 9.5–10
+  const [handCm, setHandCm] = useState(19);
+
+  // Mobility & optional traits
+  const [ankleFlex, setAnkleFlex] = useState(0.65);     // plantar flex range/whip power
+  const [shoulderER, setShoulderER] = useState(0.7);    // external rotation/flexibility
+
+  // Famous presets
+  const [preset, setPreset] = useState("");
+  useEffect(()=>{
+    if (!preset) return;
+    const d = famous[preset];
+    if (!d) return;
+    setSex(d.sex);
+    setAge(d.age);
+    setHeightCm(d.heightCm);
+    setWeightKg(d.weightKg);
+    if (d.wingspanCm) setWingspanCm(d.wingspanCm);
+    if (d.shoeUS) setFootCm(usShoeToFootCm(d.shoeUS));
+    // torso/leg/shoulder/waist/hand unknown → keep prior
+  }, [preset]);
+
+  // Compute metrics
+  const metrics = useMemo(()=> computeMetrics({
+    sex, age, heightCm, weightKg, wingspanCm, torsoCm, legCm, shoulderCm, waistCm, footCm, handCm,
+    ankleFlex, shoulderER
+  }), [sex, age, heightCm, weightKg, wingspanCm, torsoCm, legCm, shoulderCm, waistCm, footCm, handCm, ankleFlex, shoulderER]);
+
+  // Convenience values for unit display
+  const H = metric ? `${heightCm} cm` : (()=>{ const {ft,inch}=cmToFtIn(heightCm); return `${ft}' ${inch}"`; })();
+  const W = metric ? `${round(weightKg,1)} kg` : `${round(kgToLb(weightKg),1)} lb`;
+  const WS = metric ? `${wingspanCm} cm` : (()=>{ const {ft,inch}=cmToFtIn(wingspanCm); return `${ft}' ${inch}"`; })();
+  const Foot = metric ? `${round(footCm,1)} cm` : `${round(cmToIn(footCm),1)} in`;
+  const Hand = metric ? `${round(handCm,1)} cm` : `${round(cmToIn(handCm),1)} in`;
+
+  // Recommended stroke & distance (top 2 each)
+  const strokePairs = Object.entries(metrics.stroke).sort((a,b)=>b[1]-a[1]);
+  const distPairs   = Object.entries(metrics.dist).sort((a,b)=>b[1]-a[1]);
+
+  return (
+    <div className="min-h-screen w-full bg-white text-zinc-900">
+      {/* Header */}
+      <header className="px-6 py-4 border-b border-zinc-200 flex items-center justify-between">
+        <div className="flex items-baseline gap-3">
+          <h1 className="text-2xl font-semibold tracking-tight">SwimMatch</h1>
+          <div className="text-xs text-zinc-500">Anthropometrics → Stroke & Distance Insights</div>
+        </div>
+        <div className="flex items-center gap-2 text-xs">
+          <div className="flex items-center bg-zinc-200 rounded-md overflow-hidden">
+            <button className={`px-3 py-1 ${metric? 'bg-zinc-800 text-white':'text-zinc-700'}`} onClick={()=>setMetric(true)}>Metric</button>
+            <button className={`px-3 py-1 ${!metric? 'bg-zinc-800 text-white':'text-zinc-700'}`} onClick={()=>setMetric(false)}>Imperial</button>
+          </div>
+          <div className="flex items-center bg-zinc-200 rounded-md overflow-hidden">
+            <button className={`px-3 py-1 ${sex==='M'? 'bg-zinc-800 text-white':'text-zinc-700'}`} onClick={()=>setSex('M')}>Male</button>
+            <button className={`px-3 py-1 ${sex==='F'? 'bg-zinc-800 text-white':'text-zinc-700'}`} onClick={()=>setSex('F')}>Female</button>
+          </div>
+          <select className="px-2 py-1 bg-zinc-100 rounded-md" value={preset} onChange={e=> setPreset(e.target.value)}>
+            <option value="">Famous athlete preset…</option>
+            {Object.keys(famous).map(k=> <option key={k} value={k}>{k}</option>)}
+          </select>
+        </div>
+      </header>
+
+      {/* Main Grid */}
+      <div className="grid grid-cols-12 gap-6 p-6">
+        {/* Left — Controls */}
+        <section className="col-span-12 lg:col-span-4 space-y-4">
+          <div className="p-4 rounded-2xl border border-zinc-200 bg-white space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-medium">Body Dimensions</div>
+              <div className="text-[11px] text-zinc-500">Use ▲▼ or type</div>
+            </div>
+            <div className="grid grid-cols-1 gap-2">
+              <Stepper label="Age" value={age} setValue={setAge} step={0.5} suffix="yr" min={5} max={25}/>
+              <Stepper label="Height" value={metric? heightCm : round(cmToIn(heightCm),1)} setValue={v=> setHeightCm(metric? v : inToCm(v))} step={metric?1:0.5} suffix={metric?"cm":"in"} min={100} max={220}/>
+              <Stepper label="Weight" value={metric? weightKg : round(kgToLb(weightKg),1)} setValue={v=> setWeightKg(metric? v : lbToKg(v))} step={metric?0.5:1} suffix={metric?"kg":"lb"} min={20} max={120}/>
+              <Stepper label="Wingspan" value={metric? wingspanCm : round(cmToIn(wingspanCm),1)} setValue={v=> setWingspanCm(metric? v : inToCm(v))} step={metric?1:0.5} suffix={metric?"cm":"in"} min={110} max={230}/>
+              <Stepper label="Torso length" value={metric? torsoCm : round(cmToIn(torsoCm),1)} setValue={v=> setTorsoCm(metric? v : inToCm(v))} step={metric?0.5:0.5} suffix={metric?"cm":"in"} min={40} max={100}/>
+              <Stepper label="Leg length" value={metric? legCm : round(cmToIn(legCm),1)} setValue={v=> setLegCm(metric? v : inToCm(v))} step={metric?0.5:0.5} suffix={metric?"cm":"in"} min={50} max={130}/>
+              <Stepper label="Shoulder width" value={metric? shoulderCm : round(cmToIn(shoulderCm),1)} setValue={v=> setShoulderCm(metric? v : inToCm(v))} step={metric?0.5:0.5} suffix={metric?"cm":"in"} min={30} max={60}/>
+              <Stepper label="Waist circ." value={metric? waistCm : round(cmToIn(waistCm),1)} setValue={v=> setWaistCm(metric? v : inToCm(v))} step={metric?0.5:0.5} suffix={metric?"cm":"in"} min={45} max={100}/>
+              <Stepper label="Foot length" value={metric? round(footCm,1) : round(cmToIn(footCm),1)} setValue={v=> setFootCm(metric? v : inToCm(v))} step={metric?0.5:0.25} suffix={metric?"cm":"in"} min={20} max={33}/>
+              <Stepper label="Hand length" value={metric? round(handCm,1) : round(cmToIn(handCm),1)} setValue={v=> setHandCm(metric? v : inToCm(v))} step={metric?0.5:0.25} suffix={metric?"cm":"in"} min={14} max={25}/>
+            </div>
+          </div>
+
+          <div className="p-4 rounded-2xl border border-zinc-200 bg-white space-y-3">
+            <div className="text-sm font-medium">Mobility & Traits</div>
+            <Slider label="Ankle whip power" value={ankleFlex} setValue={setAnkleFlex}/>
+            <Slider label="Shoulder external rotation" value={shoulderER} setValue={setShoulderER}/>
+            <div className="text-[11px] text-zinc-500">Tip: If you have ankle dorsiflexion &gt; 75° and very plantar-flexible feet, push the slider higher.</div>
+          </div>
+
+          <div className="p-4 rounded-2xl border border-zinc-200 bg-white">
+            <div className="text-[11px] text-zinc-500 leading-relaxed">
+              <strong className="font-semibold">Coaching disclaimer.</strong> This tool suggests strokes/distances your body may be inclined toward. It does <em>not</em> limit you. Progress is built by great technique, consistent training, smart recovery, and mindset.
+            </div>
+          </div>
+        </section>
+
+        {/* Middle — Hero Silhouette & Key Numbers */}
+        <section className="col-span-12 lg:col-span-4 space-y-4">
+          <div className="p-4 rounded-2xl border border-zinc-200 bg-white">
+            <div className="aspect-[4/7] w-full">
+              <Silhouette heightCm={heightCm} wingspanCm={wingspanCm} shoulderCm={shoulderCm} waistCm={waistCm} />
+            </div>
+            <div className="grid grid-cols-2 gap-3 mt-3 text-sm">
+              <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-200">
+                <div className="text-xs text-zinc-500">Height</div>
+                <div className="font-medium">{H}</div>
+              </div>
+              <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-200">
+                <div className="text-xs text-zinc-500">Weight</div>
+                <div className="font-medium">{W} <span className="text-xs text-zinc-500 ml-1">BMI {round(metrics.bmi,1)}</span></div>
+              </div>
+              <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-200">
+                <div className="text-xs text-zinc-500">Wingspan</div>
+                <div className="font-medium">{WS} <span className="text-xs text-zinc-500 ml-1">Ape {round(metrics.ape)} cm</span></div>
+              </div>
+              <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-200">
+                <div className="text-xs text-zinc-500">Foot / Hand</div>
+                <div className="font-medium">{Foot} / {Hand}</div>
+              </div>
+              <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-200 col-span-2">
+                <div className="text-xs text-zinc-500">Percentiles (approx)</div>
+                <div className="text-sm">Height ~ <strong>{metrics.percentiles.heightPct ? round(metrics.percentiles.heightPct) : '—'}</strong>th; BMI ~ <strong>{metrics.percentiles.bmiPct ? round(metrics.percentiles.bmiPct) : '—'}</strong>th</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-4 rounded-2xl border border-zinc-200 bg-white">
+            <div className="text-sm font-medium mb-2">Hydrodynamics (proxies)</div>
+            <div className="space-y-2">
+              <BarRow name="Propulsion" value={Math.round(100*clamp(metrics.propProxy,0,1))} />
+              <BarRow name="Drag (lower better)" value={Math.round(100*clamp(metrics.dragProxy,0,1))} />
+              <div className="text-[11px] text-zinc-500">Propulsion combines shoulder width, wingspan (ape index), estimated hand/foot area, and shoulder mobility. Drag includes BMI, waist/height, and shape bonus (shoulder/waist).</div>
+            </div>
+          </div>
+        </section>
+
+        {/* Right — Recommendations & Stroke Panels */}
+        <section className="col-span-12 lg:col-span-4 space-y-4">
+          <div className="p-4 rounded-2xl border border-zinc-200 bg-white">
+            <div className="text-sm font-medium mb-3">Stroke Affinity</div>
+            <div className="space-y-2">
+              {Object.entries(metrics.stroke).map(([k,v])=> <BarRow key={k} name={k} value={v}/>) }
+            </div>
+            <div className="mt-3 text-sm">
+              Top picks: <span className="font-medium">{strokePairs[0][0]}</span>, <span className="font-medium">{strokePairs[1][0]}</span>
+            </div>
+          </div>
+
+          <div className="p-4 rounded-2xl border border-zinc-200 bg-white">
+            <div className="text-sm font-medium mb-3">Distance Profile</div>
+            <div className="space-y-2">
+              <BarRow name="50–100" value={metrics.dist.Sprint50_100} />
+              <BarRow name="200–400" value={metrics.dist.Middle200_400} />
+              <BarRow name="800–1500" value={metrics.dist.Distance800_1500} />
+            </div>
+            <div className="mt-3 text-sm">Suggested events: <span className="font-medium">{
+              distPairs.map(d=>d[0].replace('_',' ').replace('Sprint','50–100').replace('Middle','200–400').replace('Distance','800–1500')).slice(0,2).join(', ')
+            }</span></div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-1 p-3 rounded-2xl border border-zinc-200 bg-white"><StrokeMini label="Freestyle"/></div>
+            <div className="col-span-1 p-3 rounded-2xl border border-zinc-200 bg-white"><StrokeMini label="Backstroke"/></div>
+            <div className="col-span-1 p-3 rounded-2xl border border-zinc-200 bg-white"><StrokeMini label="Breaststroke"/></div>
+            <div className="col-span-1 p-3 rounded-2xl border border-zinc-200 bg-white"><StrokeMini label="Butterfly"/></div>
+          </div>
+        </section>
+
+        {/* Bottom — Rationale & What to add */}
+        <section className="col-span-12 p-4 rounded-2xl border border-zinc-200 bg-white">
+          <div className="grid md:grid-cols-2 gap-6">
+            <div>
+              <div className="text-sm font-medium mb-2">How these suggestions are made</div>
+              <ul className="list-disc ml-5 text-sm space-y-1 text-zinc-700">
+                <li><strong>Ape index</strong> (wingspan − height) increases distance-per-stroke; helps Fly/Free/Back.</li>
+                <li><strong>Shoulder width</strong> and <strong>mobility</strong> (ER) aid catch mechanics; higher propulsion.</li>
+                <li><strong>Hand/foot proxies</strong> scale with length → more surface area → more thrust.</li>
+                <li><strong>Drag proxy</strong> rises with BMI and waist/height; shape bonus for broader shoulders.</li>
+                <li><strong>Breaststroke</strong> weighs <strong>ankle whip</strong> heavily (knee/ankle external rotation & plantar flexion).</li>
+                <li><strong>Distance profile</strong> favors low drag & leanness; sprints favor peak propulsion.</li>
+              </ul>
+            </div>
+            <div>
+              <div className="text-sm font-medium mb-2">Optional inputs that make this smarter</div>
+              <ul className="list-disc ml-5 text-sm space-y-1 text-zinc-700">
+                <li><strong>Ankle plantar flexion</strong> (°) & <strong>hip ER</strong> (°) for breaststroke kick quality.</li>
+                <li><strong>Grip strength</strong> (kg) or <strong>pull-up max</strong> for upper-body power proxy.</li>
+                <li><strong>Vertical jump</strong> (cm) & <strong>standing broad jump</strong> (cm) for start/push-off power.</li>
+                <li><strong>Underwater dolphin count</strong> (m/turn) & <strong>UD speed</strong> (m/s) for walls advantage.</li>
+                <li><strong>PBs</strong> (e.g., 50/100/200 times) to cross-check morphology predictions.</li>
+                <li><strong>Body fat %</strong> and <strong>thoracic volume</strong> estimates for buoyancy modeling.</li>
+              </ul>
+            </div>
+          </div>
+          <div className="mt-4 text-[11px] text-zinc-500">
+            Data sources for presets include public profiles and articles (e.g., Wikipedia, TeamUSA, major outlets). Exact wingspan/foot/hand values are not published for all athletes; missing fields are left blank.
+          </div>
+        </section>
+      </div>
+
+      <footer className="px-6 pb-8 text-[11px] text-zinc-500">
+        © {new Date().getFullYear()} SwimMatch prototype. Educational use only.
+      </footer>
+    </div>
+  );
+}
+
+// ------------------------------- Lightweight Tests --------------------------
+// These run once in-browser to validate key invariants.
+if (typeof window !== 'undefined' && !window.__SWIMMATCH_TESTED__) {
+  window.__SWIMMATCH_TESTED__ = true;
+  try {
+    // Test 1: Metric computation returns bounded stroke scores
+    const base = computeMetrics({
+      sex: 'M', age: 12, heightCm: 164, weightKg: 48, wingspanCm: 168,
+      torsoCm: 62, legCm: 84, shoulderCm: 40, waistCm: 66, footCm: 27, handCm: 19,
+      ankleFlex: 0.65, shoulderER: 0.7,
+    });
+    const vals = Object.values(base.stroke).concat(Object.values(base.dist));
+    console.assert(vals.every(v => v >= 0 && v <= 100), 'Scores must be within [0,100]');
+
+    // Test 2: Greater wingspan should not reduce propulsion proxy
+    const lessSpan = computeMetrics({
+      sex: 'M', age: 12, heightCm: 164, weightKg: 48, wingspanCm: 160,
+      torsoCm: 62, legCm: 84, shoulderCm: 40, waistCm: 66, footCm: 27, handCm: 19,
+      ankleFlex: 0.65, shoulderER: 0.7,
+    }).propProxy;
+    console.assert(base.propProxy >= lessSpan, 'Propulsion proxy should rise with wingspan (ape index).');
+
+    // Test 3: Better ankle whip improves Breast/IM relative to baseline
+    const poorAnk = computeMetrics({
+      sex: 'M', age: 12, heightCm: 164, weightKg: 48, wingspanCm: 168,
+      torsoCm: 62, legCm: 84, shoulderCm: 40, waistCm: 66, footCm: 27, handCm: 19,
+      ankleFlex: 0.2, shoulderER: 0.7,
+    });
+    console.assert(base.stroke.Breast >= poorAnk.stroke.Breast, 'Breast score should improve with ankleFlex.');
+    console.assert(base.stroke.IM >= poorAnk.stroke.IM, 'IM score should not worsen with better ankleFlex.');
+
+    // Test 4: Percentiles return null-safe numbers within (0,100)
+    const pct = approxPercentiles('M', 12, 164, 18);
+    console.assert(pct && pct.heightPct > 0 && pct.heightPct < 100, 'Height percentile should be (0,100).');
+    console.assert(pct && pct.bmiPct > 0 && pct.bmiPct < 100, 'BMI percentile should be (0,100).');
+
+    // Test 5: Extreme BMI increases drag proxy
+    const lean = computeMetrics({
+      sex: 'M', age: 12, heightCm: 164, weightKg: 44, wingspanCm: 168,
+      torsoCm: 62, legCm: 84, shoulderCm: 40, waistCm: 64, footCm: 27, handCm: 19,
+      ankleFlex: 0.65, shoulderER: 0.7,
+    }).dragProxy;
+    const heavy = computeMetrics({
+      sex: 'M', age: 12, heightCm: 164, weightKg: 64, wingspanCm: 168,
+      torsoCm: 62, legCm: 84, shoulderCm: 40, waistCm: 76, footCm: 27, handCm: 19,
+      ankleFlex: 0.65, shoulderER: 0.7,
+    }).dragProxy;
+    console.assert(heavy >= lean, 'Drag proxy should rise with BMI/waist.');
+
+    console.debug('[SwimMatch] Lightweight tests passed.');
+  } catch (err) {
+    console.error('[SwimMatch] Tests encountered an error:', err);
+  }
+}
 
