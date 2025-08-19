@@ -8,6 +8,7 @@
 - 2025-08-13: Introduced reusable swimmer shape for more realistic silhouette and mini-stroke panels.
 - 2025-08-13: Added simple coach tests panel with SWOLF and CSS calculations stored in localStorage.
 - 2025-08-26: Replaced swimmer silhouette with adjustable stick figure and added animated mini-stroke panels colored by stroke suitability.
+- 2025-08-27: Reworked figure into block swimmer silhouette with rotatable limbs.
 
 ## Instructions for future agents
 - Keep the project framework-free (vanilla JS, CSS, HTML).

@@ -71,26 +71,17 @@
 
   const NS = "http://www.w3.org/2000/svg";
 
-  function buildStick(data, scale) {
+  function buildSwimmer(data, scale) {
     const g = document.createElementNS(NS, "g");
-    const line = (x1, y1, x2, y2) => {
-      const l = document.createElementNS(NS, "line");
-      l.setAttribute("x1", x1);
-      l.setAttribute("y1", y1);
-      l.setAttribute("x2", x2);
-      l.setAttribute("y2", y2);
-      return l;
-    };
-    const torso = (data.torso || 70) * scale;
-    const leg = (data.leg || 90) * scale;
-    const shoulder = (data.shoulder || 40) * scale;
-    const arm =
-      (((data.wingspan || data.height || 180) - shoulder) / 2) * scale;
+    const torsoH = (data.torso || 70) * scale;
+    const legH = (data.leg || 90) * scale;
+    const shoulderW = (data.shoulder || 40) * scale;
+    const armL =
+      (((data.wingspan || data.height || 180) - shoulderW) / 2) * scale;
     const headR = 10 * scale;
+    const limbW = 6 * scale;
     const neckY = headR * 2;
-    const armY = neckY + headR * 0.2;
-    const hipY = neckY + torso;
-    const footY = hipY + leg;
+    const hipY = neckY + torsoH;
 
     const parts = { g };
     const head = document.createElementNS(NS, "circle");
@@ -100,22 +91,56 @@
     g.appendChild(head);
     parts.head = head;
 
-    const body = line(0, neckY, 0, hipY);
+    const body = document.createElementNS(NS, "rect");
+    body.setAttribute("x", -shoulderW / 2);
+    body.setAttribute("y", neckY);
+    body.setAttribute("width", shoulderW);
+    body.setAttribute("height", torsoH);
     g.appendChild(body);
     parts.body = body;
 
-    const leftArm = line(0, armY, -arm, armY + 10 * scale);
-    const rightArm = line(0, armY, arm, armY + 10 * scale);
+    const leftArm = document.createElementNS(NS, "g");
+    leftArm.setAttribute("transform", `translate(${-shoulderW / 2},${neckY})`);
+    const leftArmRect = document.createElementNS(NS, "rect");
+    leftArmRect.setAttribute("x", -limbW / 2);
+    leftArmRect.setAttribute("y", 0);
+    leftArmRect.setAttribute("width", limbW);
+    leftArmRect.setAttribute("height", armL);
+    leftArm.appendChild(leftArmRect);
     g.appendChild(leftArm);
-    g.appendChild(rightArm);
     parts.leftArm = leftArm;
+
+    const rightArm = document.createElementNS(NS, "g");
+    rightArm.setAttribute("transform", `translate(${shoulderW / 2},${neckY})`);
+    const rightArmRect = document.createElementNS(NS, "rect");
+    rightArmRect.setAttribute("x", -limbW / 2);
+    rightArmRect.setAttribute("y", 0);
+    rightArmRect.setAttribute("width", limbW);
+    rightArmRect.setAttribute("height", armL);
+    rightArm.appendChild(rightArmRect);
+    g.appendChild(rightArm);
     parts.rightArm = rightArm;
 
-    const leftLeg = line(0, hipY, -shoulder / 4, footY);
-    const rightLeg = line(0, hipY, shoulder / 4, footY);
+    const leftLeg = document.createElementNS(NS, "g");
+    leftLeg.setAttribute("transform", `translate(${-shoulderW / 4},${hipY})`);
+    const leftLegRect = document.createElementNS(NS, "rect");
+    leftLegRect.setAttribute("x", -limbW / 2);
+    leftLegRect.setAttribute("y", 0);
+    leftLegRect.setAttribute("width", limbW);
+    leftLegRect.setAttribute("height", legH);
+    leftLeg.appendChild(leftLegRect);
     g.appendChild(leftLeg);
-    g.appendChild(rightLeg);
     parts.leftLeg = leftLeg;
+
+    const rightLeg = document.createElementNS(NS, "g");
+    rightLeg.setAttribute("transform", `translate(${shoulderW / 4},${hipY})`);
+    const rightLegRect = document.createElementNS(NS, "rect");
+    rightLegRect.setAttribute("x", -limbW / 2);
+    rightLegRect.setAttribute("y", 0);
+    rightLegRect.setAttribute("width", limbW);
+    rightLegRect.setAttribute("height", legH);
+    rightLeg.appendChild(rightLegRect);
+    g.appendChild(rightLeg);
     parts.rightLeg = rightLeg;
 
     return parts;
@@ -125,23 +150,19 @@
     const person = document.getElementById("person");
     person.innerHTML = "";
     const scale = 160 / ((data.torso || 70) + (data.leg || 90) + 40);
-    const stick = buildStick(data, scale);
-    stick.g.setAttribute("transform", "translate(100,10)");
-    person.appendChild(stick.g);
+    const fig = buildSwimmer(data, scale);
+    fig.g.setAttribute("transform", "translate(100,10)");
+    person.appendChild(fig.g);
   }
 
   function addRotate(el, from, to, dur, begin) {
     const anim = document.createElementNS(NS, "animateTransform");
     anim.setAttribute("attributeName", "transform");
     anim.setAttribute("type", "rotate");
-    anim.setAttribute(
-      "from",
-      `${from} ${el.getAttribute("x1")} ${el.getAttribute("y1")}`,
-    );
-    anim.setAttribute(
-      "to",
-      `${to} ${el.getAttribute("x1")} ${el.getAttribute("y1")}`,
-    );
+    const cx = el.getAttribute("x1") || el.getAttribute("cx") || 0;
+    const cy = el.getAttribute("y1") || el.getAttribute("cy") || 0;
+    anim.setAttribute("from", `${from} ${cx} ${cy}`);
+    anim.setAttribute("to", `${to} ${cx} ${cy}`);
     anim.setAttribute("dur", dur);
     anim.setAttribute("repeatCount", "indefinite");
     if (begin) anim.setAttribute("begin", begin);
@@ -160,25 +181,25 @@
       else panel.classList.add("poor");
 
       const scale = 30 / ((data.torso || 70) + (data.leg || 90));
-      const stick = buildStick(data, scale);
-      stick.g.setAttribute("transform", "translate(20,30) rotate(90)");
-      container.appendChild(stick.g);
+      const fig = buildSwimmer(data, scale);
+      fig.g.setAttribute("transform", "translate(20,30) rotate(90)");
+      container.appendChild(fig.g);
 
       if (name === "Freestyle" || name === "Backstroke") {
-        addRotate(stick.leftArm, 0, 360, "2s");
-        addRotate(stick.rightArm, 180, 540, "2s");
-        addRotate(stick.leftLeg, -30, 30, "0.6s");
-        addRotate(stick.rightLeg, 30, -30, "0.6s");
+        addRotate(fig.leftArm, 0, 360, "2s");
+        addRotate(fig.rightArm, 180, 540, "2s");
+        addRotate(fig.leftLeg, -30, 30, "0.6s");
+        addRotate(fig.rightLeg, 30, -30, "0.6s");
       } else if (name === "Breaststroke") {
-        addRotate(stick.leftArm, -30, 30, "1.2s");
-        addRotate(stick.rightArm, 30, -30, "1.2s");
-        addRotate(stick.leftLeg, -20, 20, "1.2s");
-        addRotate(stick.rightLeg, 20, -20, "1.2s");
+        addRotate(fig.leftArm, -30, 30, "1.2s");
+        addRotate(fig.rightArm, 30, -30, "1.2s");
+        addRotate(fig.leftLeg, -20, 20, "1.2s");
+        addRotate(fig.rightLeg, 20, -20, "1.2s");
       } else if (name === "Butterfly") {
-        addRotate(stick.leftArm, -60, 60, "1s");
-        addRotate(stick.rightArm, -60, 60, "1s", "0s");
-        addRotate(stick.leftLeg, -20, 20, "0.8s");
-        addRotate(stick.rightLeg, -20, 20, "0.8s");
+        addRotate(fig.leftArm, -60, 60, "1s");
+        addRotate(fig.rightArm, -60, 60, "1s", "0s");
+        addRotate(fig.leftLeg, -20, 20, "0.8s");
+        addRotate(fig.rightLeg, -20, 20, "0.8s");
       }
     });
   }
