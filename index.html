@@ -4,47 +4,153 @@
     <meta charset="UTF-8" />
     <title>SwimMatch Dashboard</title>
     <style>
+      :root {
+        --bg: #0b1220;
+        --card: #0f172a;
+        --line: #1f2937;
+        --text: #e5e7eb;
+        --muted: #9ca3af;
+        --accent: #fb923c;
+        --accent-soft: #fde68a33;
+      }
+      * {
+        box-sizing: border-box;
+      }
       body {
-        font-family: sans-serif;
-        background: #f4f4f5;
-        color: #111;
         margin: 0;
+        font-family:
+          "Inter",
+          system-ui,
+          -apple-system,
+          sans-serif;
+        background:
+          radial-gradient(circle at 20% 20%, #111827 0, #0b1220 40%),
+          linear-gradient(120deg, #0b1220 0%, #0f172a 60%, #0b1220 100%);
+        color: var(--text);
+        min-height: 100vh;
+      }
+      .page {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 32px 20px 48px;
+      }
+      .masthead {
+        display: grid;
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .brand-mark {
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, var(--accent), #f97316);
+        box-shadow: 0 10px 30px #f9731640;
+        position: relative;
+        overflow: hidden;
+      }
+      .brand-mark::after {
+        content: "";
+        position: absolute;
+        inset: 8px;
+        border: 1px solid #fff4;
+        border-radius: 10px;
+        rotate: -8deg;
       }
       h1 {
-        text-align: center;
-        font-size: 1.5rem;
-        margin: 1rem 0;
+        font-size: 1.65rem;
+        letter-spacing: 0.01em;
+        margin: 0;
+      }
+      .eyebrow {
+        text-transform: uppercase;
+        font-size: 0.7rem;
+        letter-spacing: 0.16em;
+        color: var(--muted);
+        margin: 0;
+      }
+      .lede {
+        margin: 0;
+        color: #cbd5e1;
+        max-width: 720px;
+        line-height: 1.5;
+      }
+      .chips {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .chip {
+        padding: 6px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        color: var(--muted);
+        background: #111827;
+        font-size: 0.8rem;
       }
       .dashboard {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 1rem;
-        max-width: 1200px;
-        margin: auto;
-        padding: 1rem;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 14px;
       }
       .panel {
-        background: #fff;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
-        padding: 1rem;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 16px;
+        box-shadow: 0 20px 60px #0006;
+        position: relative;
+        overflow: hidden;
+      }
+      .panel h2 {
+        margin: 0 0 12px;
+        font-size: 1rem;
+        letter-spacing: 0.02em;
+      }
+      .panel small {
+        color: var(--muted);
+      }
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 10px 12px;
       }
       label {
-        display: block;
-        font-size: 0.8rem;
-        margin-top: 0.5rem;
+        display: grid;
+        gap: 6px;
+        color: #cbd5e1;
+        font-size: 0.85rem;
       }
       input,
       select {
         width: 100%;
-        padding: 0.2rem;
-        font-size: 0.9rem;
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 1px solid #1f2937;
+        background: #0b1220;
+        color: var(--text);
+        font-size: 0.95rem;
+        transition:
+          border-color 120ms ease,
+          box-shadow 120ms ease;
+      }
+      input:focus,
+      select:focus {
+        outline: none;
+        border-color: #fbbf24;
+        box-shadow: 0 0 0 3px #fbbf2430;
       }
       #silhouette-container {
         display: flex;
         justify-content: center;
         align-items: center;
         height: 280px;
+        background: radial-gradient(circle at 20% 20%, #111827, #0b1220 60%);
+        border-radius: 12px;
       }
       svg#silhouette path,
       svg#silhouette rect,
@@ -54,55 +160,100 @@
       .miniStroke svg rect,
       .miniStroke svg circle,
       .miniStroke svg line {
-        fill: #d4d4d8;
-        stroke: #4b5563;
+        fill: #1f2937;
+        stroke: #cbd5e1;
         stroke-width: 2;
         stroke-linecap: round;
       }
       .stats {
-        font-size: 0.9rem;
-        line-height: 1.4;
+        font-size: 0.92rem;
+        line-height: 1.6;
+        display: grid;
+        gap: 10px;
       }
-      small {
-        font-size: 0.75rem;
-        color: #555;
+      .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 10px;
+      }
+      .stat-card {
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 1px dashed var(--line);
+        background: #0b1220;
+      }
+      .stat-label {
+        text-transform: uppercase;
+        font-size: 0.7rem;
+        letter-spacing: 0.12em;
+        color: var(--muted);
+      }
+      .stat-value {
+        display: block;
+        font-size: 1.1rem;
+        margin-top: 4px;
       }
       #mini-strokes {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 0.5rem;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
       }
       .miniStroke {
         position: relative;
-        height: 80px;
-        background: #f1f5f9;
-        border-radius: 6px;
+        height: 90px;
+        background: linear-gradient(135deg, #0d1627, #0b1220);
+        border-radius: 10px;
         overflow: hidden;
-        border: 2px solid #9ca3af;
+        border: 1px solid var(--line);
       }
       .miniStroke.good {
-        border-color: #fb923c;
+        box-shadow: inset 0 0 0 1px #f97316aa;
       }
       .miniStroke.ok {
-        border-color: #93c5fd;
+        box-shadow: inset 0 0 0 1px #38bdf855;
       }
       .miniStroke.poor {
-        border-color: #9ca3af;
+        box-shadow: inset 0 0 0 1px var(--line);
       }
       .miniStroke::after {
         content: attr(data-label);
         position: absolute;
-        bottom: 4px;
-        left: 4px;
-        font-size: 0.7rem;
-        color: #555;
+        top: 8px;
+        left: 10px;
+        font-size: 0.8rem;
+        color: #cbd5e1;
+        letter-spacing: 0.04em;
       }
       .miniStroke svg {
         width: 100%;
         height: 100%;
       }
       .wave {
-        fill: #bae6fd;
+        fill: #111827;
+      }
+      .accent-bar {
+        position: absolute;
+        inset: auto 0 0;
+        height: 4px;
+        background: linear-gradient(90deg, #f97316, #fbbf24);
+      }
+      button {
+        margin-top: 6px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        background: #f97316;
+        border: none;
+        color: #0b1220;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        cursor: pointer;
+        transition:
+          transform 120ms ease,
+          box-shadow 120ms ease;
+      }
+      button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 12px 24px #f9731633;
       }
     </style>
   </head>
@@ -111,149 +262,217 @@
       xmlns="http://www.w3.org/2000/svg"
       style="position: absolute; width: 0; height: 0"
     ></svg>
-    <h1>SwimMatch Prototype</h1>
-    <div class="dashboard">
-      <div class="panel">
-        <label
-          >Preset
-          <select id="preset">
-            <option value="">-- choose --</option>
-          </select>
-        </label>
-        <label
-          >Sex
-          <select id="sex">
-            <option value="M">Male</option>
-            <option value="F">Female</option>
-          </select>
-        </label>
-        <label>Age <input type="number" id="age" value="16" /></label>
-        <label
-          >Height (cm) <input type="number" id="height" value="180"
-        /></label>
-        <label
-          >Weight (kg) <input type="number" id="weight" value="70"
-        /></label>
-        <label
-          >Wingspan (cm) <input type="number" id="wingspan" value="180"
-        /></label>
-        <label
-          >Torso length (cm) <input type="number" id="torso" value="70"
-        /></label>
-        <label
-          >Leg length (cm) <input type="number" id="leg" value="90"
-        /></label>
-        <label
-          >Shoulder width (cm) <input type="number" id="shoulder" value="40"
-        /></label>
-        <label>Waist (cm) <input type="number" id="waist" value="70" /></label>
-        <label
-          >Hand length (cm) <input type="number" id="hand" value="18"
-        /></label>
-        <label
-          >Foot length (cm) <input type="number" id="foot" value="26"
-        /></label>
-      </div>
-      <div class="panel" id="silhouette-container">
-        <svg id="silhouette" viewBox="0 0 200 200">
-          <g id="person"></g>
-        </svg>
-      </div>
-      <div class="panel stats">
-        <div><strong>BMI:</strong> <span id="bmi">-</span></div>
-        <div>
-          <strong>Ape Index (wingspan - height):</strong>
-          <span id="ape">-</span> cm
-        </div>
-        <div>
-          <strong>Suggested strokes:</strong> <span id="stroke">-</span>
-        </div>
-        <div>
-          <strong>Suggested distances:</strong> <span id="distance">-</span>
-        </div>
-      </div>
-      <div class="panel">
-        <div id="mini-strokes">
-          <div class="miniStroke" data-label="Freestyle">
-            <svg viewBox="0 0 100 60">
-              <rect class="wave" x="-100" y="40" width="100" height="5">
-                <animate
-                  attributeName="x"
-                  from="-100"
-                  to="100"
-                  dur="2s"
-                  repeatCount="indefinite"
-                />
-              </rect>
-              <g class="miniPerson"></g>
-            </svg>
-          </div>
-          <div class="miniStroke" data-label="Backstroke">
-            <svg viewBox="0 0 100 60">
-              <rect class="wave" x="-100" y="40" width="100" height="5">
-                <animate
-                  attributeName="x"
-                  from="-100"
-                  to="100"
-                  dur="2s"
-                  repeatCount="indefinite"
-                />
-              </rect>
-              <g class="miniPerson"></g>
-            </svg>
-          </div>
-          <div class="miniStroke" data-label="Breaststroke">
-            <svg viewBox="0 0 100 60">
-              <rect class="wave" x="-100" y="40" width="100" height="5">
-                <animate
-                  attributeName="x"
-                  from="-100"
-                  to="100"
-                  dur="2s"
-                  repeatCount="indefinite"
-                />
-              </rect>
-              <g class="miniPerson"></g>
-            </svg>
-          </div>
-          <div class="miniStroke" data-label="Butterfly">
-            <svg viewBox="0 0 100 60">
-              <rect class="wave" x="-100" y="40" width="100" height="5">
-                <animate
-                  attributeName="x"
-                  from="-100"
-                  to="100"
-                  dur="2s"
-                  repeatCount="indefinite"
-                />
-              </rect>
-              <g class="miniPerson"></g>
-            </svg>
+    <div class="page">
+      <header class="masthead">
+        <div class="brand">
+          <div class="brand-mark"></div>
+          <div>
+            <p class="eyebrow">Anthropometrics lab</p>
+            <h1>SwimMatch Studio</h1>
           </div>
         </div>
-        <small>Silhouettes and water flow update with your dimensions.</small>
-      </div>
-      <div class="panel">
-        <h2>Coach Tests</h2>
-        <label>25m time (s) <input type="number" id="t25" step="0.01" /></label>
-        <label>25m strokes <input type="number" id="s25" step="1" /></label>
-        <button id="save25">Save 25m</button>
-        <div id="out25"></div>
-        <hr />
-        <label
-          >200m time (s) <input type="number" id="t200" step="0.01"
-        /></label>
-        <label
-          >400m time (s) <input type="number" id="t400" step="0.01"
-        /></label>
-        <button id="calcCSS">Calc CSS</button>
-        <div id="outCSS"></div>
-      </div>
-      <div class="panel stats">
-        <p>
-          These suggestions do not limit you to any stroke or event—dedication
-          and training matter most.
+        <p class="lede">
+          Refine a swimmer's body model, visualize leverage, and see which
+          events the physique naturally favors.
         </p>
+        <div class="chips">
+          <span class="chip">Live silhouette physics</span>
+          <span class="chip">Stroke suitability</span>
+          <span class="chip">CSS + SWOLF checkpoints</span>
+        </div>
+      </header>
+
+      <div class="dashboard">
+        <div class="panel">
+          <h2>Athlete profile</h2>
+          <div class="form-grid">
+            <label
+              >Preset
+              <select id="preset">
+                <option value="">-- choose --</option>
+              </select>
+            </label>
+            <label
+              >Sex
+              <select id="sex">
+                <option value="M">Male</option>
+                <option value="F">Female</option>
+              </select>
+            </label>
+            <label>Age <input type="number" id="age" value="16" /></label>
+            <label
+              >Height (cm) <input type="number" id="height" value="180"
+            /></label>
+            <label
+              >Weight (kg) <input type="number" id="weight" value="70"
+            /></label>
+            <label
+              >Wingspan (cm) <input type="number" id="wingspan" value="180"
+            /></label>
+            <label
+              >Torso length (cm) <input type="number" id="torso" value="70"
+            /></label>
+            <label
+              >Leg length (cm) <input type="number" id="leg" value="90"
+            /></label>
+            <label
+              >Shoulder width (cm)
+              <input type="number" id="shoulder" value="40" />
+            </label>
+            <label
+              >Waist (cm) <input type="number" id="waist" value="70"
+            /></label>
+            <label
+              >Hand length (cm) <input type="number" id="hand" value="18"
+            /></label>
+            <label
+              >Foot length (cm) <input type="number" id="foot" value="26"
+            /></label>
+          </div>
+          <div class="accent-bar"></div>
+        </div>
+
+        <div class="panel">
+          <h2>Live silhouette</h2>
+          <div id="silhouette-container">
+            <svg id="silhouette" viewBox="0 0 200 200">
+              <g id="person"></g>
+            </svg>
+          </div>
+          <small
+            >Dimensions and proportions adjust instantly as you edit
+            inputs.</small
+          >
+          <div class="accent-bar"></div>
+        </div>
+
+        <div class="panel stats">
+          <h2>Body insights</h2>
+          <div class="stat-grid">
+            <div class="stat-card">
+              <span class="stat-label">BMI</span>
+              <span class="stat-value" id="bmi">-</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Ape index</span>
+              <span class="stat-value"><span id="ape">-</span> cm</span>
+            </div>
+          </div>
+          <div class="stat-grid">
+            <div class="stat-card">
+              <span class="stat-label">Suggested strokes</span>
+              <span class="stat-value" id="stroke">-</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Suggested distances</span>
+              <span class="stat-value" id="distance">-</span>
+            </div>
+          </div>
+          <small
+            >Heuristics blend leverage, mass distribution, and symmetry.</small
+          >
+          <div class="accent-bar"></div>
+        </div>
+
+        <div class="panel">
+          <h2>Stroke micro-panels</h2>
+          <div id="mini-strokes">
+            <div class="miniStroke" data-label="Freestyle">
+              <svg viewBox="0 0 100 60">
+                <rect class="wave" x="-100" y="40" width="100" height="5">
+                  <animate
+                    attributeName="x"
+                    from="-100"
+                    to="100"
+                    dur="2s"
+                    repeatCount="indefinite"
+                  />
+                </rect>
+                <g class="miniPerson"></g>
+              </svg>
+            </div>
+            <div class="miniStroke" data-label="Backstroke">
+              <svg viewBox="0 0 100 60">
+                <rect class="wave" x="-100" y="40" width="100" height="5">
+                  <animate
+                    attributeName="x"
+                    from="-100"
+                    to="100"
+                    dur="2s"
+                    repeatCount="indefinite"
+                  />
+                </rect>
+                <g class="miniPerson"></g>
+              </svg>
+            </div>
+            <div class="miniStroke" data-label="Breaststroke">
+              <svg viewBox="0 0 100 60">
+                <rect class="wave" x="-100" y="40" width="100" height="5">
+                  <animate
+                    attributeName="x"
+                    from="-100"
+                    to="100"
+                    dur="2s"
+                    repeatCount="indefinite"
+                  />
+                </rect>
+                <g class="miniPerson"></g>
+              </svg>
+            </div>
+            <div class="miniStroke" data-label="Butterfly">
+              <svg viewBox="0 0 100 60">
+                <rect class="wave" x="-100" y="40" width="100" height="5">
+                  <animate
+                    attributeName="x"
+                    from="-100"
+                    to="100"
+                    dur="2s"
+                    repeatCount="indefinite"
+                  />
+                </rect>
+                <g class="miniPerson"></g>
+              </svg>
+            </div>
+          </div>
+          <small
+            >Silhouettes are tuned to your proportions and colored by
+            suitability.</small
+          >
+          <div class="accent-bar"></div>
+        </div>
+
+        <div class="panel">
+          <h2>Coach tests</h2>
+          <div class="form-grid">
+            <label
+              >25m time (s) <input type="number" id="t25" step="0.01"
+            /></label>
+            <label>25m strokes <input type="number" id="s25" step="1" /></label>
+          </div>
+          <button id="save25">Save 25m</button>
+          <div id="out25"></div>
+          <hr />
+          <div class="form-grid">
+            <label
+              >200m time (s) <input type="number" id="t200" step="0.01"
+            /></label>
+            <label
+              >400m time (s) <input type="number" id="t400" step="0.01"
+            /></label>
+          </div>
+          <button id="calcCSS">Calc CSS</button>
+          <div id="outCSS"></div>
+          <div class="accent-bar"></div>
+        </div>
+
+        <div class="panel stats">
+          <p>
+            The dashboard suggests where leverage and tempo may shine, but any
+            event is possible with the right plan. Pair the model with session
+            notes, stroke counts, and pacing habits for the clearest signal.
+          </p>
+          <div class="accent-bar"></div>
+        </div>
       </div>
     </div>
     <script src="metrics.js"></script>
