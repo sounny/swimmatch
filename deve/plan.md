@@ -5,6 +5,14 @@
 - Issues: pervasive encoding artifacts (e.g., `??`), repeated citations, and a few very long paragraphs that hurt readability.
 - Suggestions: clean encoding, dedupe repeated source mentions, tighten sections into actionable requirements, and pull out priority metric sets for MVP vs. later waves (e.g., stroke+split core, then start/turn, then physiology/video overlays).
 
+## Execution slices and milestones
+- Phase 0 (prep, 1 week): clean research doc, metric glossary, taxonomy, evidence table; finalize MVP scope and user stories.
+- Phase 1 (foundations, weeks 2-3): data model, import formats, validation, sample data; core calculators (SR, DPS, SI, SWOLF, pacing, CSS); baseline UI skeleton for session/race analysis.
+- Phase 2 (experience, weeks 4-6): race analysis visuals (splits, strokes, turns), silhouettes/hydrodynamics updates, deck-mode UX, insights v1 (rules-based), export/reporting.
+- Phase 3 (integrations, weeks 7-9): video alignment, CSV/import wizard, wearable/timing stubs, consent handling, roles/permissions, localization/accessibility.
+- Phase 4 (quality and ops, weeks 10-11): regression datasets, visual regression, perf budgets, accessibility audit fixes, backups/monitoring/feature flags, PII handling, migration plan.
+- Phase 5 (beta and polish, weeks 12-13): coach docs, drills library, benchmarks, beta program with teams, roadmap/changelog, incident playbook, SLOs.
+
 ## Backlog (ordered)
 1. Fix encoding artifacts in ref/reserach.md and reflow into readable paragraphs.
 2. Condense the report into an executive summary with 1-page takeaways for coaches.
