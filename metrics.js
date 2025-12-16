@@ -66,6 +66,10 @@ const presets = {
   },
 };
 
+function clamp(val, min = 0, max = 100) {
+  return Math.min(max, Math.max(min, val));
+}
+
 function dps(distanceMeters, strokes) {
   return strokes > 0 ? distanceMeters / strokes : 0;
 }
@@ -106,7 +110,26 @@ function computeMetrics(data) {
   const ape = (data.wingspan || h) - h;
   const shoulderRatio =
     data.shoulder && data.waist ? data.shoulder / data.waist : 1;
+  const legRatio = data.leg ? data.leg / h : 0;
+  const torsoRatio = data.torso ? data.torso / h : 0;
   const footRatio = data.foot ? data.foot / h : 0;
+
+  const leverage = clamp(
+    55 + ape * 2.5 + (shoulderRatio - 1.1) * 45 + (torsoRatio - 0.34) * 120,
+  );
+  const streamline = clamp(
+    68 -
+      (data.waist ? (data.waist / h) * 210 : 0) +
+      (torsoRatio - 0.34) * 150 -
+      (bmi - 22) * 4,
+  );
+  const kick = clamp(50 + footRatio * 480 + legRatio * 110 - (bmi - 22) * 4);
+  const timing = clamp(
+    50 +
+      (torsoRatio / Math.max(legRatio, 0.01)) * 26 +
+      (ape > 0 ? 8 : -6) +
+      (shoulderRatio - 1.05) * 28,
+  );
 
   const strokes = {
     Freestyle: 0,
@@ -127,23 +150,82 @@ function computeMetrics(data) {
     strokes.Breaststroke += 2;
     strokes.Butterfly += 1;
   }
+  if (leverage > 65) {
+    strokes.Freestyle += 2;
+    strokes.Backstroke += 1;
+  }
+  if (kick > 60) {
+    strokes.Butterfly += 1;
+    strokes.Breaststroke += 1;
+  }
+  if (streamline > 65) {
+    strokes.Backstroke += 1;
+    strokes.Freestyle += 1;
+  }
+  if (timing > 60) {
+    strokes.Breaststroke += 1;
+    strokes.Butterfly += 1;
+  }
 
   const distances = {
     "Sprint 50-100": 0,
     "Middle 200-400": 0,
     "Distance 800-1500": 0,
   };
-  if (bmi < 20) distances["Distance 800-1500"] += 2;
-  else if (bmi < 24) distances["Middle 200-400"] += 2;
+  if (bmi < 20 || streamline > leverage) distances["Distance 800-1500"] += 2;
+  else if (bmi < 23.5) distances["Middle 200-400"] += 2;
   else distances["Sprint 50-100"] += 2;
-  if (ape > 5) distances["Distance 800-1500"] += 1;
+
+  if (kick > 65) distances["Sprint 50-100"] += 1;
+  if (streamline > 70) distances["Middle 200-400"] += 1;
+  if (leverage > 70) distances["Distance 800-1500"] += 1;
   if (bmi > 24) distances["Sprint 50-100"] += 1;
+
+  const notes = {
+    leverage:
+      leverage >= 70
+        ? "Long reach + broad shoulders feed the catch."
+        : "Neutral reach - win with high elbow anchor.",
+    streamline:
+      streamline >= 68
+        ? "Low drag frame keeps hips high in the lane."
+        : "Protect line: squeeze the kick and chin position.",
+    kick:
+      kick >= 65
+        ? "Fin-like feet and long legs fuel kick drive."
+        : "Kick is neutral - train rhythm to lift hips.",
+    timing:
+      timing >= 62
+        ? "Body ratios suit smooth timing changes."
+        : "Use tempo trainers to sharpen timing.",
+  };
+
+  const highlights = [];
+  if (ape > 5) highlights.push(`Wingspan surplus +${ape.toFixed(1)} cm`);
+  if (footRatio > 0.16)
+    highlights.push(`${data.foot} cm feet for strong kick lift`);
+  if (shoulderRatio > 1.45)
+    highlights.push(`${shoulderRatio.toFixed(2)} shoulder:waist pull frame`);
+  if (highlights.length < 3 && bmi < 21.5)
+    highlights.push("Lean profile reduces drag on every stroke");
+  if (highlights.length < 3)
+    highlights.push("Tempo + leverage hints update in real time");
 
   return {
     bmi: Math.round(bmi * 10) / 10,
     apeIndex: Math.round(ape * 10) / 10,
     strokes,
     distances,
+    leverage,
+    streamline,
+    kick,
+    timing,
+    shoulderRatio,
+    legRatio,
+    torsoRatio,
+    footRatio,
+    notes,
+    highlights,
   };
 }
 
@@ -157,5 +239,6 @@ if (typeof module !== "undefined") {
     cssPace100,
     zonesFromCSS,
     worldAquaticsPoints,
+    clamp,
   };
 }

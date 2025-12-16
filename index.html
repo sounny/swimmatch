@@ -4,14 +4,18 @@
     <meta charset="UTF-8" />
     <title>SwimMatch Dashboard</title>
     <style>
+      @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap");
+
       :root {
-        --bg: #0b1220;
-        --card: #0f172a;
-        --line: #1f2937;
-        --text: #e5e7eb;
-        --muted: #9ca3af;
-        --accent: #fb923c;
-        --accent-soft: #fde68a33;
+        --bg: #030712;
+        --panel: #0b1020;
+        --panel-2: #0e172b;
+        --ink: #e6eeff;
+        --muted: #8ca2c6;
+        --line: #152742;
+        --accent: #36f7d0;
+        --accent-2: #5ca9ff;
+        --glow: #36f7d04d;
       }
       * {
         box-sizing: border-box;
@@ -19,20 +23,36 @@
       body {
         margin: 0;
         font-family:
+          "Space Grotesk",
           "Inter",
           system-ui,
           -apple-system,
           sans-serif;
         background:
-          radial-gradient(circle at 20% 20%, #111827 0, #0b1220 40%),
-          linear-gradient(120deg, #0b1220 0%, #0f172a 60%, #0b1220 100%);
-        color: var(--text);
+          radial-gradient(circle at 14% 18%, #0d1b3b 0, #030712 46%),
+          linear-gradient(120deg, #030712 0%, #060b17 50%, #030712 100%);
+        color: var(--ink);
         min-height: 100vh;
+        letter-spacing: 0.01em;
       }
       .page {
-        max-width: 1180px;
+        max-width: 1220px;
         margin: 0 auto;
-        padding: 32px 20px 48px;
+        padding: 32px 18px 52px;
+        position: relative;
+        z-index: 1;
+      }
+      .page::before {
+        content: "";
+        position: absolute;
+        inset: 40px 12px auto;
+        height: 280px;
+        background:
+          radial-gradient(circle at 12% 28%, #1a2a4caa 0, transparent 38%),
+          radial-gradient(circle at 78% 18%, #0b1938aa 0, transparent 32%);
+        pointer-events: none;
+        filter: blur(30px);
+        z-index: -1;
       }
       .masthead {
         display: grid;
@@ -45,39 +65,53 @@
         gap: 12px;
       }
       .brand-mark {
-        width: 42px;
-        height: 42px;
+        width: 44px;
+        height: 44px;
         border-radius: 14px;
-        background: linear-gradient(135deg, var(--accent), #f97316);
-        box-shadow: 0 10px 30px #f9731640;
+        background: linear-gradient(135deg, #36f7d0, #5ca9ff);
         position: relative;
         overflow: hidden;
+        box-shadow: 0 12px 30px #36f7d02b;
       }
       .brand-mark::after {
         content: "";
         position: absolute;
         inset: 8px;
-        border: 1px solid #fff4;
+        border-radius: 12px;
+        border: 1px solid #ffffff33;
+        transform: rotate(-10deg);
+      }
+      .brand-mark::before {
+        content: "";
+        position: absolute;
+        inset: 12px 8px auto 8px;
+        height: 6px;
         border-radius: 10px;
-        rotate: -8deg;
+        background: #021129aa;
+        box-shadow: 0 12px 0 #02112988;
       }
       h1 {
-        font-size: 1.65rem;
+        font-size: 1.8rem;
         letter-spacing: 0.01em;
         margin: 0;
+      }
+      h2 {
+        margin: 0;
+        font-size: 1.15rem;
+        letter-spacing: 0.01em;
       }
       .eyebrow {
         text-transform: uppercase;
         font-size: 0.7rem;
         letter-spacing: 0.16em;
         color: var(--muted);
-        margin: 0;
+        margin: 0 0 4px;
       }
       .lede {
         margin: 0;
-        color: #cbd5e1;
-        max-width: 720px;
-        line-height: 1.5;
+        color: #cbd6ec;
+        max-width: 760px;
+        line-height: 1.55;
       }
       .chips {
         display: flex;
@@ -85,165 +119,340 @@
         flex-wrap: wrap;
       }
       .chip {
-        padding: 6px 10px;
+        padding: 7px 12px;
         border-radius: 999px;
         border: 1px solid var(--line);
         color: var(--muted);
-        background: #111827;
-        font-size: 0.8rem;
+        background: #0a1225;
+        font-size: 0.82rem;
+        box-shadow: inset 0 0 0 1px #0f1c33;
       }
-      .dashboard {
+      .hero-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
         gap: 14px;
       }
+      .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 14px;
+        margin-top: 14px;
+      }
       .panel {
-        background: var(--card);
-        border: 1px solid var(--line);
-        border-radius: 14px;
+        background: linear-gradient(
+          160deg,
+          #0b1020 0%,
+          #0c1324 50%,
+          #09101c 100%
+        );
+        border: 1px solid #0f1c30;
+        border-radius: 16px;
         padding: 16px;
-        box-shadow: 0 20px 60px #0006;
         position: relative;
         overflow: hidden;
+        box-shadow: 0 24px 70px #000a;
       }
-      .panel h2 {
-        margin: 0 0 12px;
-        font-size: 1rem;
-        letter-spacing: 0.02em;
+      .panel::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(circle at 20% 10%, #36f7d008 0, transparent 30%),
+          radial-gradient(circle at 80% 0%, #5ca9ff11 0, transparent 34%);
+        pointer-events: none;
       }
-      .panel small {
+      .panel-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 10px;
+      }
+      .hint {
+        margin: 4px 0 0;
         color: var(--muted);
+        font-size: 0.9rem;
+      }
+      .tiny-pill {
+        background: #0f1c33;
+        padding: 6px 10px;
+        border-radius: 12px;
+        border: 1px solid #1b2f52;
+        color: #c8dcff;
+        font-size: 0.82rem;
+        white-space: nowrap;
       }
       .form-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-        gap: 10px 12px;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 12px;
       }
       label {
         display: grid;
         gap: 6px;
-        color: #cbd5e1;
-        font-size: 0.85rem;
+        color: #cbd6ec;
+        font-size: 0.9rem;
       }
       input,
       select {
         width: 100%;
         padding: 10px 12px;
-        border-radius: 10px;
-        border: 1px solid #1f2937;
-        background: #0b1220;
-        color: var(--text);
+        border-radius: 12px;
+        border: 1px solid #13223a;
+        background: #050a14;
+        color: var(--ink);
         font-size: 0.95rem;
         transition:
-          border-color 120ms ease,
-          box-shadow 120ms ease;
+          border-color 140ms ease,
+          box-shadow 140ms ease;
       }
       input:focus,
       select:focus {
         outline: none;
-        border-color: #fbbf24;
-        box-shadow: 0 0 0 3px #fbbf2430;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px #36f7d022;
       }
-      #silhouette-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 280px;
-        background: radial-gradient(circle at 20% 20%, #111827, #0b1220 60%);
+      .silhouette-wrapper {
+        position: relative;
+        border-radius: 14px;
+        background: linear-gradient(160deg, #050910, #081226);
+        border: 1px solid #101c30;
+        height: 340px;
+        overflow: hidden;
+        padding: 6px;
+      }
+      .waterlines {
+        position: absolute;
+        inset: 6px;
         border-radius: 12px;
+        overflow: hidden;
+        pointer-events: none;
       }
-      svg#silhouette path,
-      svg#silhouette rect,
-      svg#silhouette circle,
-      svg#silhouette line,
-      .miniStroke svg path,
-      .miniStroke svg rect,
-      .miniStroke svg circle,
-      .miniStroke svg line {
-        fill: #1f2937;
-        stroke: #cbd5e1;
-        stroke-width: 2;
+      .waterlines span {
+        position: absolute;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, #36f7d022, transparent);
+      }
+      .waterlines span:nth-child(1) {
+        top: 22%;
+      }
+      .waterlines span:nth-child(2) {
+        top: 50%;
+      }
+      .waterlines span:nth-child(3) {
+        top: 78%;
+      }
+      #silhouette {
+        width: 100%;
+        height: 100%;
+        display: block;
+        filter: drop-shadow(0 8px 24px #0009);
+      }
+      #silhouette g,
+      #silhouette path,
+      #silhouette line,
+      #silhouette circle {
         stroke-linecap: round;
+        stroke-linejoin: round;
       }
-      .stats {
-        font-size: 0.92rem;
-        line-height: 1.6;
-        display: grid;
-        gap: 10px;
+      #silhouette .body {
+        fill: #36f7d01f;
+        stroke: #d3e4ff;
+        stroke-width: 3;
+      }
+      #silhouette .spine {
+        stroke: #5ca9ff;
+        stroke-width: 2;
+        opacity: 0.7;
+      }
+      #silhouette .limb {
+        stroke: #d3e4ff;
+        stroke-width: 4;
+        fill: none;
+      }
+      #silhouette .joint {
+        fill: #36f7d0;
+        stroke: #36f7d0;
+      }
+      #silhouette .guide {
+        stroke: #36f7d055;
+        stroke-width: 2;
+        stroke-dasharray: 6 5;
+      }
+      .callouts {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+      }
+      .callouts .pill {
+        padding: 8px 10px;
+        border-radius: 12px;
+        border: 1px solid #1b2f52;
+        background: #0f1c33;
+        color: #cde2ff;
+        font-size: 0.9rem;
       }
       .stat-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
         gap: 10px;
+        margin-bottom: 8px;
       }
       .stat-card {
         padding: 10px 12px;
-        border-radius: 10px;
-        border: 1px dashed var(--line);
-        background: #0b1220;
+        border-radius: 12px;
+        border: 1px dashed #1a2742;
+        background: #050a14;
       }
       .stat-label {
         text-transform: uppercase;
         font-size: 0.7rem;
         letter-spacing: 0.12em;
         color: var(--muted);
+        margin: 0 0 4px;
       }
       .stat-value {
         display: block;
-        font-size: 1.1rem;
-        margin-top: 4px;
+        font-size: 1.15rem;
+        margin-top: 2px;
+      }
+      .stat-note {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+      .meter-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 10px;
+        margin: 10px 0;
+      }
+      .meter-card {
+        padding: 10px 12px;
+        border-radius: 12px;
+        border: 1px solid #13223a;
+        background: linear-gradient(135deg, #0c1526, #0a1323);
+      }
+      .meter-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 6px;
+        font-size: 0.95rem;
+      }
+      .meter-value {
+        font-weight: 700;
+        color: #e6eeff;
+      }
+      .meter-bar {
+        height: 7px;
+        border-radius: 999px;
+        background: #0b1628;
+        overflow: hidden;
+        border: 1px solid #1b2f52;
+      }
+      .meter-bar span {
+        display: block;
+        height: 100%;
+        width: var(--meter, 0%);
+        background: linear-gradient(90deg, #36f7d0, #5ca9ff);
+        box-shadow: 0 0 18px #36f7d055;
+      }
+      .meter-note {
+        margin: 6px 0 0;
+        color: var(--muted);
+        font-size: 0.88rem;
+        line-height: 1.5;
+      }
+      .pill-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 8px;
+        margin-top: 8px;
+      }
+      .pill-card {
+        border-radius: 12px;
+        padding: 10px 12px;
+        background: #081021;
+        border: 1px solid #13223a;
+      }
+      .pill-card h3 {
+        margin: 6px 0 0;
+        font-size: 1.15rem;
+      }
+      .pill-card p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.9rem;
+        letter-spacing: 0.01em;
+      }
+      .pill-card small {
+        color: var(--muted);
+        font-size: 0.85rem;
       }
       #mini-strokes {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
         gap: 10px;
       }
       .miniStroke {
         position: relative;
-        height: 90px;
-        background: linear-gradient(135deg, #0d1627, #0b1220);
-        border-radius: 10px;
+        background: linear-gradient(160deg, #06101e, #0b1a30);
+        border-radius: 12px;
         overflow: hidden;
-        border: 1px solid var(--line);
+        border: 1px solid #13223a;
+        padding: 10px 10px 12px;
       }
       .miniStroke.good {
-        box-shadow: inset 0 0 0 1px #f97316aa;
+        box-shadow: inset 0 0 0 1px #36f7d066;
       }
       .miniStroke.ok {
-        box-shadow: inset 0 0 0 1px #38bdf855;
+        box-shadow: inset 0 0 0 1px #5ca9ff55;
       }
       .miniStroke.poor {
-        box-shadow: inset 0 0 0 1px var(--line);
+        box-shadow: inset 0 0 0 1px #1a2742;
       }
-      .miniStroke::after {
-        content: attr(data-label);
-        position: absolute;
-        top: 8px;
-        left: 10px;
-        font-size: 0.8rem;
-        color: #cbd5e1;
-        letter-spacing: 0.04em;
+      .lane-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: #dfe7ff;
+        font-size: 0.95rem;
+      }
+      .lane-score {
+        color: #36f7d0;
+        font-weight: 700;
       }
       .miniStroke svg {
         width: 100%;
-        height: 100%;
+        height: 120px;
       }
-      .wave {
-        fill: #111827;
+      .lane-water {
+        fill: #0a1324;
+        stroke: #10203a;
+        stroke-width: 1;
       }
-      .accent-bar {
-        position: absolute;
-        inset: auto 0 0;
-        height: 4px;
-        background: linear-gradient(90deg, #f97316, #fbbf24);
+      .lane-line {
+        stroke: #223756;
+        stroke-width: 1.4;
+        stroke-dasharray: 6 8;
+      }
+      .lane-hint {
+        margin: 6px 0 0;
+        color: var(--muted);
+        font-size: 0.9rem;
+        line-height: 1.4;
       }
       button {
         margin-top: 6px;
-        padding: 10px 12px;
-        border-radius: 10px;
-        background: #f97316;
+        padding: 11px 14px;
+        border-radius: 12px;
+        background: linear-gradient(90deg, #36f7d0, #5ca9ff);
         border: none;
-        color: #0b1220;
+        color: #031629;
         font-weight: 700;
         letter-spacing: 0.02em;
         cursor: pointer;
@@ -253,7 +462,36 @@
       }
       button:hover {
         transform: translateY(-1px);
-        box-shadow: 0 12px 24px #f9731633;
+        box-shadow: 0 16px 30px #36f7d033;
+      }
+      hr {
+        border: none;
+        border-top: 1px solid #13223a;
+        margin: 16px 0;
+      }
+      .readout {
+        color: #cde2ff;
+        font-size: 0.95rem;
+      }
+      .button-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 8px;
+      }
+      .footnote {
+        margin-top: 14px;
+      }
+      @media (max-width: 720px) {
+        h1 {
+          font-size: 1.5rem;
+        }
+        .panel-header {
+          flex-direction: column;
+        }
+        .silhouette-wrapper {
+          height: 320px;
+        }
       }
     </style>
   </head>
@@ -272,19 +510,29 @@
           </div>
         </div>
         <p class="lede">
-          Refine a swimmer's body model, visualize leverage, and see which
-          events the physique naturally favors.
+          Sharper silhouette, water-ready poses, and live feedback on how each
+          body choice skews leverage, drag, and distance bias. Tune the rig and
+          watch the hydrodynamics respond.
         </p>
         <div class="chips">
-          <span class="chip">Live silhouette physics</span>
-          <span class="chip">Stroke suitability</span>
+          <span class="chip">Hydrodynamic silhouette</span>
+          <span class="chip">Stroke biasing</span>
           <span class="chip">CSS + SWOLF checkpoints</span>
         </div>
       </header>
 
-      <div class="dashboard">
-        <div class="panel">
-          <h2>Athlete profile</h2>
+      <section class="hero-grid">
+        <article class="panel form-panel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Input rig</p>
+              <h2>Athlete profile</h2>
+              <p class="hint">
+                Dial in true lengths and see the silhouette morph instantly.
+              </p>
+            </div>
+            <div class="tiny-pill" id="heightBadge">Height</div>
+          </div>
           <div class="form-grid">
             <label
               >Preset
@@ -317,8 +565,8 @@
             /></label>
             <label
               >Shoulder width (cm)
-              <input type="number" id="shoulder" value="40" />
-            </label>
+              <input type="number" id="shoulder" value="40"
+            /></label>
             <label
               >Waist (cm) <input type="number" id="waist" value="70"
             /></label>
@@ -329,128 +577,223 @@
               >Foot length (cm) <input type="number" id="foot" value="26"
             /></label>
           </div>
-          <div class="accent-bar"></div>
-        </div>
+        </article>
 
-        <div class="panel">
-          <h2>Live silhouette</h2>
-          <div id="silhouette-container">
-            <svg id="silhouette" viewBox="0 0 200 200">
+        <article class="panel viz-panel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Live model</p>
+              <h2>Hydrodynamics silhouette</h2>
+            </div>
+            <div class="tiny-pill" id="spanBadge">Wingspan</div>
+          </div>
+          <div class="silhouette-wrapper">
+            <div class="waterlines">
+              <span></span><span></span><span></span>
+            </div>
+            <svg id="silhouette" viewBox="0 0 260 260">
+              <g class="guides"></g>
               <g id="person"></g>
             </svg>
           </div>
-          <small
-            >Dimensions and proportions adjust instantly as you edit
-            inputs.</small
-          >
-          <div class="accent-bar"></div>
-        </div>
+          <div class="callouts" id="callouts"></div>
+        </article>
+      </section>
 
-        <div class="panel stats">
-          <h2>Body insights</h2>
+      <section class="metrics-grid">
+        <article class="panel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Advantage map</p>
+              <h2>Body insights</h2>
+            </div>
+            <div class="tiny-pill" id="physiqueTag">Frame</div>
+          </div>
           <div class="stat-grid">
             <div class="stat-card">
-              <span class="stat-label">BMI</span>
+              <p class="stat-label">BMI</p>
               <span class="stat-value" id="bmi">-</span>
+              <p class="stat-note" id="bmiNote">-</p>
             </div>
             <div class="stat-card">
-              <span class="stat-label">Ape index</span>
-              <span class="stat-value"><span id="ape">-</span> cm</span>
+              <p class="stat-label">Wingspan</p>
+              <span class="stat-value" id="wingspanStat">-</span>
+              <p class="stat-note" id="spanNote">-</p>
+            </div>
+            <div class="stat-card">
+              <p class="stat-label">Frame</p>
+              <span class="stat-value" id="frameStat">-</span>
+              <p class="stat-note" id="frameNote">-</p>
+            </div>
+            <div class="stat-card">
+              <p class="stat-label">Kick lever</p>
+              <span class="stat-value" id="footStat">-</span>
+              <p class="stat-note" id="footNote">-</p>
             </div>
           </div>
-          <div class="stat-grid">
-            <div class="stat-card">
-              <span class="stat-label">Suggested strokes</span>
-              <span class="stat-value" id="stroke">-</span>
+          <div class="meter-grid">
+            <div class="meter-card">
+              <div class="meter-top">
+                <span>Hydro leverage</span>
+                <span class="meter-value" id="leverageScore">-</span>
+              </div>
+              <div class="meter-bar"><span id="leverageBar"></span></div>
+              <p class="meter-note" id="leverageNote"></p>
             </div>
-            <div class="stat-card">
-              <span class="stat-label">Suggested distances</span>
-              <span class="stat-value" id="distance">-</span>
+            <div class="meter-card">
+              <div class="meter-top">
+                <span>Streamline</span>
+                <span class="meter-value" id="streamlineScore">-</span>
+              </div>
+              <div class="meter-bar"><span id="streamlineBar"></span></div>
+              <p class="meter-note" id="streamlineNote"></p>
+            </div>
+            <div class="meter-card">
+              <div class="meter-top">
+                <span>Kick drive</span>
+                <span class="meter-value" id="kickScore">-</span>
+              </div>
+              <div class="meter-bar"><span id="kickBar"></span></div>
+              <p class="meter-note" id="kickNote"></p>
+            </div>
+            <div class="meter-card">
+              <div class="meter-top">
+                <span>Timing / control</span>
+                <span class="meter-value" id="timingScore">-</span>
+              </div>
+              <div class="meter-bar"><span id="timingBar"></span></div>
+              <p class="meter-note" id="timingNote"></p>
             </div>
           </div>
-          <small
-            >Heuristics blend leverage, mass distribution, and symmetry.</small
-          >
-          <div class="accent-bar"></div>
-        </div>
+          <div class="pill-grid">
+            <div class="pill-card">
+              <p>Strokes that pop</p>
+              <h3 id="stroke">-</h3>
+              <small id="strokeNote">-</small>
+            </div>
+            <div class="pill-card">
+              <p>Distance tilt</p>
+              <h3 id="distance">-</h3>
+              <small id="distanceNote">-</small>
+            </div>
+            <div class="pill-card">
+              <p>Ape index</p>
+              <h3><span id="ape">-</span> cm</h3>
+              <small>Reach spread vs height.</small>
+            </div>
+          </div>
+        </article>
 
-        <div class="panel">
-          <h2>Stroke micro-panels</h2>
+        <article class="panel strokes-panel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Stroke rigs</p>
+              <h2>Stroke lanes</h2>
+            </div>
+            <div class="tiny-pill" id="torsoBadge">Torso / leg</div>
+          </div>
           <div id="mini-strokes">
             <div class="miniStroke" data-label="Freestyle">
-              <svg viewBox="0 0 100 60">
-                <rect class="wave" x="-100" y="40" width="100" height="5">
-                  <animate
-                    attributeName="x"
-                    from="-100"
-                    to="100"
-                    dur="2s"
-                    repeatCount="indefinite"
-                  />
-                </rect>
+              <div class="lane-meta">
+                <span>Freestyle</span>
+                <span class="lane-score">-</span>
+              </div>
+              <svg viewBox="0 0 240 90">
+                <g class="lane-bg">
+                  <rect
+                    class="lane-water"
+                    x="0"
+                    y="10"
+                    width="240"
+                    height="70"
+                  ></rect>
+                  <line class="lane-line" x1="0" y1="45" x2="240" y2="45" />
+                </g>
                 <g class="miniPerson"></g>
               </svg>
+              <p class="lane-hint"></p>
             </div>
             <div class="miniStroke" data-label="Backstroke">
-              <svg viewBox="0 0 100 60">
-                <rect class="wave" x="-100" y="40" width="100" height="5">
-                  <animate
-                    attributeName="x"
-                    from="-100"
-                    to="100"
-                    dur="2s"
-                    repeatCount="indefinite"
-                  />
-                </rect>
+              <div class="lane-meta">
+                <span>Backstroke</span>
+                <span class="lane-score">-</span>
+              </div>
+              <svg viewBox="0 0 240 90">
+                <g class="lane-bg">
+                  <rect
+                    class="lane-water"
+                    x="0"
+                    y="10"
+                    width="240"
+                    height="70"
+                  ></rect>
+                  <line class="lane-line" x1="0" y1="45" x2="240" y2="45" />
+                </g>
                 <g class="miniPerson"></g>
               </svg>
+              <p class="lane-hint"></p>
             </div>
             <div class="miniStroke" data-label="Breaststroke">
-              <svg viewBox="0 0 100 60">
-                <rect class="wave" x="-100" y="40" width="100" height="5">
-                  <animate
-                    attributeName="x"
-                    from="-100"
-                    to="100"
-                    dur="2s"
-                    repeatCount="indefinite"
-                  />
-                </rect>
+              <div class="lane-meta">
+                <span>Breaststroke</span>
+                <span class="lane-score">-</span>
+              </div>
+              <svg viewBox="0 0 240 90">
+                <g class="lane-bg">
+                  <rect
+                    class="lane-water"
+                    x="0"
+                    y="10"
+                    width="240"
+                    height="70"
+                  ></rect>
+                  <line class="lane-line" x1="0" y1="45" x2="240" y2="45" />
+                </g>
                 <g class="miniPerson"></g>
               </svg>
+              <p class="lane-hint"></p>
             </div>
             <div class="miniStroke" data-label="Butterfly">
-              <svg viewBox="0 0 100 60">
-                <rect class="wave" x="-100" y="40" width="100" height="5">
-                  <animate
-                    attributeName="x"
-                    from="-100"
-                    to="100"
-                    dur="2s"
-                    repeatCount="indefinite"
-                  />
-                </rect>
+              <div class="lane-meta">
+                <span>Butterfly</span>
+                <span class="lane-score">-</span>
+              </div>
+              <svg viewBox="0 0 240 90">
+                <g class="lane-bg">
+                  <rect
+                    class="lane-water"
+                    x="0"
+                    y="10"
+                    width="240"
+                    height="70"
+                  ></rect>
+                  <line class="lane-line" x1="0" y1="45" x2="240" y2="45" />
+                </g>
                 <g class="miniPerson"></g>
               </svg>
+              <p class="lane-hint"></p>
             </div>
           </div>
-          <small
-            >Silhouettes are tuned to your proportions and colored by
-            suitability.</small
-          >
-          <div class="accent-bar"></div>
-        </div>
+        </article>
 
-        <div class="panel">
-          <h2>Coach tests</h2>
+        <article class="panel coach-panel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Coach tests</p>
+              <h2>Tempo checkpoints</h2>
+              <p class="hint">Save SWOLF and CSS right beside the model.</p>
+            </div>
+          </div>
           <div class="form-grid">
             <label
               >25m time (s) <input type="number" id="t25" step="0.01"
             /></label>
             <label>25m strokes <input type="number" id="s25" step="1" /></label>
           </div>
-          <button id="save25">Save 25m</button>
-          <div id="out25"></div>
+          <div class="button-row">
+            <button id="save25">Save 25m</button>
+            <div id="out25" class="readout"></div>
+          </div>
           <hr />
           <div class="form-grid">
             <label
@@ -460,20 +803,21 @@
               >400m time (s) <input type="number" id="t400" step="0.01"
             /></label>
           </div>
-          <button id="calcCSS">Calc CSS</button>
-          <div id="outCSS"></div>
-          <div class="accent-bar"></div>
-        </div>
+          <div class="button-row">
+            <button id="calcCSS">Calc CSS</button>
+            <div id="outCSS" class="readout"></div>
+          </div>
+        </article>
+      </section>
 
-        <div class="panel stats">
-          <p>
-            The dashboard suggests where leverage and tempo may shine, but any
-            event is possible with the right plan. Pair the model with session
-            notes, stroke counts, and pacing habits for the clearest signal.
-          </p>
-          <div class="accent-bar"></div>
-        </div>
-      </div>
+      <article class="panel footnote">
+        <p>
+          The dashboard highlights where leverage and tempo naturally shine, but
+          any event is fair game with the right plan. Pair the model with
+          session notes, stroke counts, and pacing habits for the clearest
+          signal.
+        </p>
+      </article>
     </div>
     <script src="metrics.js"></script>
     <script src="main.js"></script>
