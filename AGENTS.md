@@ -11,6 +11,7 @@
 - 2025-08-27: Reworked figure into block swimmer silhouette with rotatable limbs.
 - 2025-12-15: Restyled dashboard with darker pro layout, stat cards, accent bars, and denser form grid.
 - 2025-12-15: Overhauled the dashboard look with an organic SVG swimmer, lane-style stroke mini panels, richer heuristics (leverage/streamline/kick/timing), and new callouts; ran Prettier on core files.
+- 2025-12-18: Refined UI styling with deeper gradients, glassy panels, richer chips, and upgraded controls for a cleaner pro dashboard feel.
 
 ## Instructions for future agents
 - Keep the project framework-free (vanilla JS, CSS, HTML).
