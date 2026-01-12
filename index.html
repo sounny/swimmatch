@@ -15,7 +15,11 @@
         --line: #152742;
         --accent: #36f7d0;
         --accent-2: #5ca9ff;
+        --accent-3: #9b7bff;
         --glow: #36f7d04d;
+        --panel-glow: #0b1b3a;
+        --panel-edge: #1b2e4b;
+        --shadow: 0 26px 80px #000c;
       }
       * {
         box-sizing: border-box;
@@ -29,8 +33,10 @@
           -apple-system,
           sans-serif;
         background:
-          radial-gradient(circle at 14% 18%, #0d1b3b 0, #030712 46%),
-          linear-gradient(120deg, #030712 0%, #060b17 50%, #030712 100%);
+          radial-gradient(circle at 20% 14%, #121f42 0, transparent 42%),
+          radial-gradient(circle at 80% -10%, #162b58 0, transparent 40%),
+          radial-gradient(circle at 40% 72%, #0c1b35 0, transparent 45%),
+          linear-gradient(120deg, #030712 0%, #050a16 50%, #030712 100%);
         color: var(--ink);
         min-height: 100vh;
         letter-spacing: 0.01em;
@@ -38,21 +44,35 @@
       .page {
         max-width: 1220px;
         margin: 0 auto;
-        padding: 32px 18px 52px;
+        padding: 36px 18px 64px;
         position: relative;
         z-index: 1;
       }
       .page::before {
         content: "";
         position: absolute;
-        inset: 40px 12px auto;
-        height: 280px;
+        inset: 30px 0 auto;
+        height: 320px;
         background:
-          radial-gradient(circle at 12% 28%, #1a2a4caa 0, transparent 38%),
-          radial-gradient(circle at 78% 18%, #0b1938aa 0, transparent 32%);
+          radial-gradient(circle at 16% 30%, #1b2f5baa 0, transparent 40%),
+          radial-gradient(circle at 78% 18%, #0b1938aa 0, transparent 35%);
         pointer-events: none;
         filter: blur(30px);
         z-index: -1;
+      }
+      .page::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          90deg,
+          transparent 0%,
+          #0e1b31 45%,
+          transparent 100%
+        );
+        opacity: 0.12;
+        pointer-events: none;
+        z-index: -2;
       }
       .masthead {
         display: grid;
@@ -71,7 +91,7 @@
         background: linear-gradient(135deg, #36f7d0, #5ca9ff);
         position: relative;
         overflow: hidden;
-        box-shadow: 0 12px 30px #36f7d02b;
+        box-shadow: 0 14px 40px #36f7d02b;
       }
       .brand-mark::after {
         content: "";
@@ -119,13 +139,15 @@
         flex-wrap: wrap;
       }
       .chip {
-        padding: 7px 12px;
+        padding: 7px 14px;
         border-radius: 999px;
-        border: 1px solid var(--line);
-        color: var(--muted);
-        background: #0a1225;
+        border: 1px solid #17253f;
+        color: #b6c7e6;
+        background: linear-gradient(120deg, #0a1225, #0b152c);
         font-size: 0.82rem;
-        box-shadow: inset 0 0 0 1px #0f1c33;
+        box-shadow:
+          inset 0 0 0 1px #0f1c33,
+          0 8px 16px #02060f;
       }
       .hero-grid {
         display: grid;
@@ -139,26 +161,32 @@
         margin-top: 14px;
       }
       .panel {
-        background: linear-gradient(
-          160deg,
-          #0b1020 0%,
-          #0c1324 50%,
-          #09101c 100%
-        );
+        background:
+          linear-gradient(160deg, #0b1020 0%, #0c1426 45%, #08101d 100%),
+          radial-gradient(circle at 0% 0%, #121f38 0, transparent 50%);
         border: 1px solid #0f1c30;
-        border-radius: 16px;
-        padding: 16px;
+        border-radius: 18px;
+        padding: 18px;
         position: relative;
         overflow: hidden;
-        box-shadow: 0 24px 70px #000a;
+        box-shadow: var(--shadow);
+      }
+      .panel::before {
+        content: "";
+        position: absolute;
+        inset: 1px;
+        border-radius: 16px;
+        border: 1px solid #142742;
+        opacity: 0.6;
+        pointer-events: none;
       }
       .panel::after {
         content: "";
         position: absolute;
         inset: 0;
         background:
-          radial-gradient(circle at 20% 10%, #36f7d008 0, transparent 30%),
-          radial-gradient(circle at 80% 0%, #5ca9ff11 0, transparent 34%);
+          radial-gradient(circle at 15% 10%, #36f7d010 0, transparent 35%),
+          radial-gradient(circle at 85% 0%, #5ca9ff1a 0, transparent 40%);
         pointer-events: none;
       }
       .panel-header {
@@ -174,13 +202,14 @@
         font-size: 0.9rem;
       }
       .tiny-pill {
-        background: #0f1c33;
-        padding: 6px 10px;
-        border-radius: 12px;
+        background: linear-gradient(120deg, #0f1c33, #121f39);
+        padding: 6px 12px;
+        border-radius: 999px;
         border: 1px solid #1b2f52;
         color: #c8dcff;
         font-size: 0.82rem;
         white-space: nowrap;
+        box-shadow: inset 0 0 0 1px #0b1526;
       }
       .form-grid {
         display: grid;
@@ -206,6 +235,10 @@
           border-color 140ms ease,
           box-shadow 140ms ease;
       }
+      input:hover,
+      select:hover {
+        border-color: #1c3254;
+      }
       input:focus,
       select:focus {
         outline: none;
@@ -215,9 +248,11 @@
       .silhouette-wrapper {
         position: relative;
         border-radius: 14px;
-        background: linear-gradient(160deg, #050910, #081226);
+        background:
+          radial-gradient(circle at 18% 12%, #111f3a 0, transparent 45%),
+          linear-gradient(160deg, #050910, #081226);
         border: 1px solid #101c30;
-        height: 340px;
+        height: 350px;
         overflow: hidden;
         padding: 6px;
       }
@@ -248,7 +283,7 @@
         width: 100%;
         height: 100%;
         display: block;
-        filter: drop-shadow(0 8px 24px #0009);
+        filter: drop-shadow(0 12px 26px #000c);
       }
       #silhouette g,
       #silhouette path,
@@ -289,9 +324,9 @@
       }
       .callouts .pill {
         padding: 8px 10px;
-        border-radius: 12px;
+        border-radius: 999px;
         border: 1px solid #1b2f52;
-        background: #0f1c33;
+        background: linear-gradient(120deg, #0f1c33, #132542);
         color: #cde2ff;
         font-size: 0.9rem;
       }
@@ -305,7 +340,21 @@
         padding: 10px 12px;
         border-radius: 12px;
         border: 1px dashed #1a2742;
-        background: #050a14;
+        background: linear-gradient(150deg, #050a14, #09142a);
+        position: relative;
+        overflow: hidden;
+      }
+      .stat-card::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(
+          circle at 90% 0%,
+          #36f7d012,
+          transparent 45%
+        );
+        opacity: 0.8;
+        pointer-events: none;
       }
       .stat-label {
         text-transform: uppercase;
@@ -335,6 +384,7 @@
         border-radius: 12px;
         border: 1px solid #13223a;
         background: linear-gradient(135deg, #0c1526, #0a1323);
+        box-shadow: inset 0 0 0 1px #0d1b32;
       }
       .meter-top {
         display: flex;
@@ -376,8 +426,9 @@
       .pill-card {
         border-radius: 12px;
         padding: 10px 12px;
-        background: #081021;
+        background: linear-gradient(140deg, #081021, #0a1730);
         border: 1px solid #13223a;
+        box-shadow: inset 0 0 0 1px #0b1933;
       }
       .pill-card h3 {
         margin: 6px 0 0;
@@ -407,13 +458,19 @@
         padding: 10px 10px 12px;
       }
       .miniStroke.good {
-        box-shadow: inset 0 0 0 1px #36f7d066;
+        box-shadow:
+          inset 0 0 0 1px #36f7d066,
+          0 8px 18px #061118;
       }
       .miniStroke.ok {
-        box-shadow: inset 0 0 0 1px #5ca9ff55;
+        box-shadow:
+          inset 0 0 0 1px #5ca9ff55,
+          0 8px 18px #061118;
       }
       .miniStroke.poor {
-        box-shadow: inset 0 0 0 1px #1a2742;
+        box-shadow:
+          inset 0 0 0 1px #1a2742,
+          0 8px 18px #061118;
       }
       .lane-meta {
         display: flex;
@@ -450,7 +507,7 @@
         margin-top: 6px;
         padding: 11px 14px;
         border-radius: 12px;
-        background: linear-gradient(90deg, #36f7d0, #5ca9ff);
+        background: linear-gradient(100deg, #36f7d0, #5ca9ff, #9b7bff);
         border: none;
         color: #031629;
         font-weight: 700;
@@ -458,11 +515,16 @@
         cursor: pointer;
         transition:
           transform 120ms ease,
-          box-shadow 120ms ease;
+          box-shadow 120ms ease,
+          filter 120ms ease;
       }
       button:hover {
         transform: translateY(-1px);
-        box-shadow: 0 16px 30px #36f7d033;
+        box-shadow: 0 18px 32px #36f7d033;
+        filter: brightness(1.04);
+      }
+      button:active {
+        transform: translateY(1px);
       }
       hr {
         border: none;
@@ -481,6 +543,7 @@
       }
       .footnote {
         margin-top: 14px;
+        background: linear-gradient(120deg, #0b1325, #0a1221);
       }
       @media (max-width: 720px) {
         h1 {
